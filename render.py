@@ -209,6 +209,20 @@ function tipPath(x, y, w, h, r) {
 
 const GAP = 2;          // разделитель цветом поверхности между сегментами
 const BAR_MAX = 24;     // марки тонкие: ни один столбик не заливает слот
+const CALM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* Счётчик: число дорастает до значения за ~1.1 с. Только для героя - на
+   каждой плитке это был бы аттракцион, а не дашборд. */
+function countUp(node, target, fmt, dur=1100) {
+  if (CALM) { node.textContent = fmt(target); return; }
+  const t0 = performance.now();
+  const step = t => {
+    const k = Math.min(1, (t - t0)/dur), e = 1 - Math.pow(1 - k, 3);
+    node.textContent = fmt(target*e);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 
 /* =========================================================== стек по дням */
 function drawDaily(host) {
@@ -247,11 +261,13 @@ function drawDaily(host) {
       if (h > 0.5) {
         el("path", {d: isTop ? capPath(x, drawTop, bw, h, 4)
                              : `M${x},${drawTop} h${bw} v${h} h${-bw} Z`,
-                    fill:`var(${s.c})`}, svg);
+                    fill:`var(${s.c})`, class:"grow-y",
+                    style:`animation-delay:${i*22}ms`}, svg);
       }
       acc += s.v;
     });
-    const lb = el("text", {class:"dlabel", x:cx, y:y(d.cost)-9, "text-anchor":"middle"}, svg);
+    const lb = el("text", {class:"dlabel fade-in", x:cx, y:y(d.cost)-9,
+                           "text-anchor":"middle"}, svg);
     lb.textContent = money0(d.cost);
     const a1 = el("text", {class:"axis-strong", x:cx, y:m.t+ih+18, "text-anchor":"middle"}, svg);
     a1.textContent = d.date.slice(8) + "." + d.date.slice(5,7);
@@ -288,9 +304,11 @@ function drawBars(host, rows, opts) {
     const nm = el("text", {class:"axis-strong", x:m.l-14, y:yb+bh/2+4,
                            "text-anchor":"end"}, svg);
     nm.textContent = label(d).length > 26 ? label(d).slice(0,25)+"…" : label(d);
-    el("path", {d: tipPath(m.l, yb, Math.max(w, 2), bh, 4),
+    el("path", {d: tipPath(m.l, yb, Math.max(w, 2), bh, 4), class:"grow-x",
+                style:`animation-delay:${i*40}ms`,
                 fill: typeof color === "function" ? color(d) : `var(${color})`}, svg);
-    const vl = el("text", {class:"dlabel", x:m.l+Math.max(w,2)+10, y:yb+bh/2+4}, svg);
+    const vl = el("text", {class:"dlabel fade-in", x:m.l+Math.max(w,2)+10,
+                           y:yb+bh/2+4}, svg);
     vl.textContent = fmt(d);
     const hit = el("rect", {class:"hit", x:0, y:y0, width:W, height:rowH}, svg);
     bindTip(hit, label(d), tipRows(d));
@@ -312,7 +330,8 @@ function drawShare(host, parts, colors) {
     else if (i === 0) d = `M${xx+4},0 h${w-4} v30 h${-(w-4)} q-4,0 -4,-4 v-22 q0,-4 4,-4 Z`;
     else if (i === parts.length-1) d = tipPath(xx, 0, w, 30, 4);
     else d = `M${xx},0 h${w} v30 h${-w} Z`;
-    el("path", {d, fill:colors[i]}, svg);
+    el("path", {d, fill:colors[i], class:"grow-x",
+                style:`animation-delay:${i*80}ms`}, svg);
     if (w > 120) {
       // Текст внутри цветной заливки - белый или чернильный по яркости заливки.
       // Ставим инлайн-стилем: класс .dlabel иначе перебивает атрибут fill.
@@ -352,12 +371,159 @@ function drawDots(host, rows, opts) {
     el("line", {x1:m.l, x2:cx, y1:cy, y2:cy,
                 stroke:"var(--line-strong)", "stroke-width":1}, svg);
     // кольцо цветом поверхности, чтобы точка читалась поверх поводка и сетки
-    el("circle", {cx, cy, r:6, fill:`var(${color})`,
+    el("circle", {cx, cy, r:6, fill:`var(${color})`, class:"pop",
+                  style:`animation-delay:${i*45}ms`,
                   stroke:"var(--surface-1)", "stroke-width":2}, svg);
-    const vl = el("text", {class:"dlabel", x:cx+14, y:cy+4}, svg);
+    const vl = el("text", {class:"dlabel fade-in", x:cx+14, y:cy+4}, svg);
     vl.textContent = fmt(d);
     const hit = el("rect", {class:"hit", x:0, y:m.t+rowH*i-4, width:W, height:rowH}, svg);
     bindTip(hit, label(d), tipRows(d));
+  });
+}
+
+/* ====================================================== круговые диаграммы */
+/* Кольцо, а не полный круг: в центре помещается сумма, и глаз сравнивает
+   длины дуг, а не площади секторов - на площадях люди системно ошибаются.
+   Сегменты разделены зазором в 3 px, порядок - по убыванию доли, чтобы
+   мелкие куски не тонули между крупными. Сектор с долей меньше 1,5 %
+   отдельной подписи не получает, для него есть строка в легенде. */
+function drawDonut(box, ul, opts) {
+  const S = 220, C = S/2, R = 76, TH = 24, GAPPX = 3;
+  const parts = opts.parts.filter(p => p.value > 0);
+  const total = parts.reduce((a, p) => a + p.value, 0);
+  const svg = el("svg", {viewBox:`0 0 ${S} ${S}`, class:"donut", role:"img",
+                         "aria-label":opts.aria}, box);
+  const g = el("g", {transform:`rotate(-90 ${C} ${C})`}, svg);
+  const circ = 2*Math.PI*R;
+  el("circle", {cx:C, cy:C, r:R, fill:"none", stroke:"var(--line)",
+                "stroke-width":TH}, g);
+  const ct = el("text", {class:"donut-total", x:C, y:C+2, "text-anchor":"middle"}, svg);
+  const cs = el("text", {class:"donut-sub", x:C, y:C+20, "text-anchor":"middle"}, svg);
+
+  const arcs = [], lis = [];
+  const reset = () => {
+    ct.textContent = opts.centerValue;
+    cs.textContent = opts.centerLabel;
+    svg.classList.remove("dim");
+    arcs.forEach(a => a.classList.remove("on"));
+  };
+  const focus = i => {
+    svg.classList.add("dim");
+    arcs.forEach((a, j) => a.classList.toggle("on", i === j));
+    ct.textContent = pct(parts[i].value, total);
+    cs.textContent = parts[i].short;
+  };
+
+  let acc = 0;
+  parts.forEach((p, i) => {
+    const len = Math.max(p.value/total*circ - GAPPX, 1);
+    const arc = el("circle", {cx:C, cy:C, r:R, fill:"none", stroke:p.color,
+                              "stroke-width":TH, class:"arc",
+                              "stroke-dasharray":`0 ${circ}`,
+                              "stroke-dashoffset": -acc*circ}, g);
+    arcs.push(arc);
+    // Дуга «выезжает» через dasharray: ставим конечное значение следующим
+    // кадром, дальше её тянет CSS-переход. При reduced-motion переход
+    // обнулён темой, и дуга появляется сразу.
+    setTimeout(() => { arc.style.strokeDasharray = `${len} ${circ}`; },
+               CALM ? 0 : 60 + i*110);
+    bindTip(arc, p.name, p.rows);
+    arc.addEventListener("mouseenter", () => focus(i));
+    arc.addEventListener("mouseleave", reset);
+
+    const li = document.createElement("li");
+    const sw = document.createElement("i");
+    sw.className = "swatch"; sw.style.background = p.color;
+    const nm = document.createElement("span");
+    nm.className = "nm"; nm.textContent = p.name;
+    const vl = document.createElement("span");
+    vl.className = "vl"; vl.textContent = p.short;
+    const pc = document.createElement("span");
+    pc.className = "pc"; pc.textContent = pct(p.value, total);
+    li.append(sw, nm, vl, pc);
+    li.addEventListener("mouseenter", () => focus(i));
+    li.addEventListener("mouseleave", reset);
+    ul.appendChild(li);
+    lis.push(li);
+
+    acc += p.value/total;
+  });
+  reset();
+}
+
+function donutCard(host, opts) {
+  const card = document.createElement("div");
+  card.className = "card donut-card";
+  const h = document.createElement("h3"); h.textContent = opts.title;
+  const s = document.createElement("div"); s.className = "sub"; s.textContent = opts.sub;
+  const box = document.createElement("div");
+  const ul = document.createElement("ul"); ul.className = "dlegend";
+  card.append(h, s, box, ul);
+  host.appendChild(card);
+  drawDonut(box, ul, opts);
+}
+
+function drawDonuts(host) {
+  const t = D.totals, p = t.parts;
+
+  donutCard(host, {
+    title: "Из чего сложилась стоимость",
+    sub: "четыре типа токенов по тарифам API",
+    aria: "Доли типов токенов в стоимости",
+    centerValue: money0(t.cost), centerLabel: "всего",
+    parts: [
+      {name:"Чтение кэша", value:p.cache_read,  color:"var(--series-cr)",
+       short:money0(p.cache_read),
+       rows:[["Стоимость", money(p.cache_read)], ["Токенов", compact(t.cache_read)]]},
+      {name:"Запись кэша", value:p.cache_write, color:"var(--series-cw)",
+       short:money0(p.cache_write),
+       rows:[["Стоимость", money(p.cache_write)], ["Токенов", compact(t.cache_write)]]},
+      {name:"Output",      value:p.output,      color:"var(--series-out)",
+       short:money0(p.output),
+       rows:[["Стоимость", money(p.output)], ["Токенов", compact(t.output)],
+             ["из них thinking", compact(t.thinking)]]},
+      {name:"Input",       value:p.input,       color:"var(--series-in)",
+       short:money0(p.input),
+       rows:[["Стоимость", money(p.input)], ["Токенов", compact(t.input)]]},
+    ],
+  });
+
+  const mcolors = ["var(--model-a)", "var(--model-b)"];
+  donutCard(host, {
+    title: "Модели",
+    sub: "доля в стоимости",
+    aria: "Доля моделей в стоимости",
+    centerValue: nf.format(t.calls), centerLabel: "вызовов",
+    parts: D.models.map((m, i) => ({
+      name: m.model, value: m.cost, color: mcolors[i] || "var(--series-cr)",
+      short: money0(m.cost),
+      rows: [["Стоимость", money(m.cost)], ["Вызовов", nf.format(m.calls)],
+             ["Цена вызова", money(m.cost/m.calls)], ["Output", compact(m.output)]],
+    })),
+  });
+
+  // Проекты: четыре крупнейших плюс сводный остаток - иначе кольцо
+  // превращается в частокол дуг по одному пикселю.
+  const ramp = ["var(--ramp-4)", "var(--ramp-3)", "var(--ramp-2)", "var(--ramp-1)"];
+  const top = D.projects.slice(0, 4);
+  const rest = D.projects.slice(4);
+  const restCost = rest.reduce((a, r) => a + r.cost, 0);
+  const pparts = top.map((r, i) => ({
+    name: r.name, value: r.cost, color: ramp[i], short: money0(r.cost),
+    rows: [["Стоимость", money(r.cost)], ["Сессий", nf.format(r.sessions)],
+           ["Вызовов", nf.format(r.calls)], ["Доля", pct(r.cost, t.cost)]],
+  }));
+  if (restCost > 0) pparts.push({
+    name: `Остальные (${rest.length})`, value: restCost, color: "var(--line-strong)",
+    short: money0(restCost),
+    rows: [["Стоимость", money(restCost)], ["Проектов", nf.format(rest.length)]],
+  });
+  donutCard(host, {
+    title: "Проекты",
+    sub: "четыре крупнейших и остаток",
+    aria: "Доля проектов в стоимости",
+    centerValue: nf.format(t.projects), centerLabel: "проектов",
+    parts: pparts,
   });
 }
 
@@ -379,6 +545,7 @@ function drawColumns(host, rows, opts) {
   rows.forEach((d, i) => {
     const cx = m.l + band*i + band/2, v = value(d);
     if (v > 0) el("path", {d: capPath(cx-bw/2, y(v), bw, m.t+ih-y(v), 4),
+                           class:"grow-y", style:`animation-delay:${i*20}ms`,
                            fill: typeof color === "function" ? color(d) : `var(${color})`}, svg);
     if (i % labelEvery === 0) {
       const t = el("text", {class:"axis", x:cx, y:m.t+ih+18, "text-anchor":"middle"}, svg);
@@ -434,6 +601,10 @@ function boot() {
     setTimeout(() => { rbtn.textContent = "Обновить данные"; }, 3200);
   });
 
+  const hv = $("#hero-value");
+  if (hv) countUp(hv, D.totals.cost, money);
+
+  drawDonuts($("#chart-donuts"));
   drawDaily($("#chart-daily"));
 
   drawBars($("#chart-projects"), D.projects, {
@@ -512,8 +683,7 @@ function boot() {
 
   // Motion 2/10 по рекомендации скилла: короткое проявление секции при
   // входе в вьюпорт. При prefers-reduced-motion класс не вешается вовсе.
-  if (!matchMedia("(prefers-reduced-motion: reduce)").matches &&
-      "IntersectionObserver" in window) {
+  if (!CALM && "IntersectionObserver" in window) {
     const io = new IntersectionObserver((entries) => {
       entries.forEach(e => {
         if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
@@ -722,7 +892,31 @@ def build_html(d: dict) -> str:
                                         "rebuild_command": "python collect.py"}},
                          ensure_ascii=False, separators=(",", ":"))
 
+    # --- структура расхода (кольца)
+    struct_rows = [
+        ["Чтение кэша", compact_ru(t["cache_read"]), fmt_money(parts["cache_read"]),
+         pct(parts["cache_read"], t["cost"])],
+        ["Запись кэша", compact_ru(t["cache_write"]), fmt_money(parts["cache_write"]),
+         pct(parts["cache_write"], t["cost"])],
+        ["Output", compact_ru(t["output"]), fmt_money(parts["output"]),
+         pct(parts["output"], t["cost"])],
+        ["Input", compact_ru(t["input"]), fmt_money(parts["input"]),
+         pct(parts["input"], t["cost"])],
+    ]
+    struct_foot = ["Итого", compact_ru(tokens_total), fmt_money(t["cost"]), "100 %"]
+
     sections = "".join([
+        section(
+            "structure", "Структура расхода",
+            f"Одна и та же сумма — {fmt_money(t['cost'])} — разложена тремя "
+            f"способами: по типам токенов, по моделям и по проектам. Кольцо, "
+            f"а не круг: в центре помещается итог, а доли сравниваются по длине "
+            f"дуги — на площадях секторов глаз ошибается систематически. "
+            f"Наведите на дугу или строку легенды, чтобы выделить её.",
+            "", "",
+            extra='<div class="donuts chartbox" id="chart-donuts"></div>',
+            table_html=table(["Тип токенов", "Токенов", "Стоимость", "Доля"],
+                             struct_rows, struct_foot)),
         section(
             "days", "Расход по дням",
             f"Столбик — стоимость дня, разложенная на то, из чего она сложилась. "
@@ -860,7 +1054,7 @@ def build_html(d: dict) -> str:
 <div class="hero-row">
   <div class="card hero">
     <div class="label">Стоимость по тарифам API</div>
-    <div class="value">{fmt_money(t['cost'])}</div>
+    <div class="value" id="hero-value">{fmt_money(t['cost'])}</div>
     <div class="note">Это оценка «во сколько обошлось бы то же самое по тарифам
       Anthropic API». У вас подписка Claude Pro — реальный платёж фиксированный
       и от этой цифры не зависит.</div>

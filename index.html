@@ -13,105 +13,191 @@
    1. Шрифты подключаются локально, без @import с Google Fonts, - страница
       обязана работать офлайн; если Fira не установлена, стек падает на системный.
    2. Цвета серий на графиках взяты не отсюда, а из палитры, проверенной
-      валидатором скилла dataviz на CVD и контраст. Их менять нельзя. */
+      валидатором скилла dataviz на CVD и контраст. Их менять нельзя.
+
+   Стекло. Карточка - это не «прозрачный прямоугольник», а матовая пластина:
+   размытие + подъём насыщенности фона, поверх которого лежат непрозрачная
+   молочная подложка (--glass-bg), тонкая световая кромка сверху и едва
+   заметное зерно. Зерно и подложка нужны ради читаемости: без них текст
+   ложится прямо на цветные пятна фона и контраст плавает от места к месту.
+   Где backdrop-filter не поддерживается, подложка становится плотной. */
 
 :root {
   color-scheme: light;
-  --surface-0:#f1f5f9; --surface-1:#ffffff; --surface-2:#eef4fb;
-  --line:#dde6f2; --line-strong:#c2d1e4;
-  --ink:#0f1e3d; --ink-2:#475569; --ink-3:#71849c;
+  --surface-0:#eef2f8; --surface-1:#ffffff; --surface-2:#eef4fb;
+  --line:#dbe5f1; --line-strong:#c2d1e4;
+  --ink:#0f1e3d; --ink-2:#42536b; --ink-3:#6a7d96;
   --accent:#1e40af; --amber:#b45309;
   --series-cr:#2a78d6; --series-cw:#1baf7a; --series-out:#eb6834; --series-in:#4a3aa7;
   --model-a:#008300; --model-b:#e87ba4;
   --ramp-1:#86b6ef; --ramp-2:#3987e5; --ramp-3:#256abf; --ramp-4:#0d366b;
-  --shadow:0 1px 2px rgba(15,30,61,.06), 0 10px 28px -20px rgba(15,30,61,.28);
+  --shadow:0 1px 2px rgba(15,30,61,.05), 0 18px 40px -26px rgba(15,30,61,.34);
+  --shadow-lift:0 2px 4px rgba(15,30,61,.06), 0 30px 60px -28px rgba(15,30,61,.42);
+
+  /* стекло */
+  --glass-bg:rgba(255,255,255,.74);
+  --glass-solid:#ffffff;                 /* фолбэк без backdrop-filter */
+  --glass-edge:rgba(255,255,255,.9);     /* световая кромка сверху */
+  --glass-blur:22px; --glass-sat:165%;
+  --grain:.22;
+  --ease:cubic-bezier(.22,.9,.28,1);
   /* плотность 8/10 -> шаг 8-32px */
   --s1:8px; --s2:12px; --s3:16px; --s4:20px; --s5:24px; --s6:32px;
 }
+
+/* Тёмная тема повторяется дважды: под prefers-color-scheme и под явным
+   data-theme="dark", чтобы переключатель побеждал в обе стороны. */
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme="light"])) {
     color-scheme: dark;
-    --surface-0:#080b14; --surface-1:rgba(255,255,255,.04); --surface-2:rgba(255,255,255,.08);
-    --line:rgba(255,255,255,.08); --line-strong:rgba(255,255,255,.16);
-    --ink:#eef3fa; --ink-2:#a9b8cc; --ink-3:#7c8ca3;
+    --surface-0:#070a12; --surface-1:rgba(255,255,255,.05); --surface-2:rgba(255,255,255,.09);
+    --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.19);
+    --ink:#f2f6fc; --ink-2:#b3c1d4; --ink-3:#8595ac;
     --accent:#3b82f6; --amber:#f97316;
     --series-cr:#3987e5; --series-cw:#199e70; --series-out:#d95926; --series-in:#9085e9;
     --model-a:#008300; --model-b:#d55181;
     --ramp-1:#184f95; --ramp-2:#2a78d6; --ramp-3:#6da7ec; --ramp-4:#b7d3f6;
-    --shadow:0 1px 2px rgba(0,0,0,.45), 0 20px 44px -20px rgba(0,0,0,.7);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 24px 48px -26px rgba(0,0,0,.75);
+    --shadow-lift:0 2px 6px rgba(0,0,0,.5), 0 36px 70px -26px rgba(0,0,0,.85);
+    --glass-bg:rgba(20,28,44,.55);
+    --glass-solid:#111827;
+    --glass-edge:rgba(255,255,255,.14);
+    --glass-blur:26px; --glass-sat:145%;
+    --grain:.30;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --surface-0:#080b14; --surface-1:rgba(255,255,255,.04); --surface-2:rgba(255,255,255,.08);
-  --line:rgba(255,255,255,.08); --line-strong:rgba(255,255,255,.16);
-  --ink:#eef3fa; --ink-2:#a9b8cc; --ink-3:#7c8ca3;
+  --surface-0:#070a12; --surface-1:rgba(255,255,255,.05); --surface-2:rgba(255,255,255,.09);
+  --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.19);
+  --ink:#f2f6fc; --ink-2:#b3c1d4; --ink-3:#8595ac;
   --accent:#3b82f6; --amber:#f97316;
   --series-cr:#3987e5; --series-cw:#199e70; --series-out:#d95926; --series-in:#9085e9;
   --model-a:#008300; --model-b:#d55181;
   --ramp-1:#184f95; --ramp-2:#2a78d6; --ramp-3:#6da7ec; --ramp-4:#b7d3f6;
-  --shadow:0 1px 2px rgba(0,0,0,.45), 0 20px 44px -20px rgba(0,0,0,.7);
-}
-:root[data-theme="dark"] body, :root:where(:not([data-theme="light"])) body {
-  background:
-    radial-gradient(700px 500px at -5% -10%, rgba(59,130,246,.20), transparent 60%),
-    radial-gradient(700px 500px at 105% 105%, rgba(249,115,22,.16), transparent 60%),
-    var(--surface-0);
-  background-attachment: fixed;
-}
-:root[data-theme="dark"] .card, :root:where(:not([data-theme="light"])) .card,
-:root[data-theme="dark"] .tile, :root:where(:not([data-theme="light"])) .tile {
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 24px 48px -26px rgba(0,0,0,.75);
+  --shadow-lift:0 2px 6px rgba(0,0,0,.5), 0 36px 70px -26px rgba(0,0,0,.85);
+  --glass-bg:rgba(20,28,44,.55);
+  --glass-solid:#111827;
+  --glass-edge:rgba(255,255,255,.14);
+  --glass-blur:26px; --glass-sat:145%;
+  --grain:.30;
 }
 
 * { box-sizing: border-box; }
 body {
-  margin:0; background:var(--surface-0); color:var(--ink);
+  margin:0; color:var(--ink);
   font-family:"Fira Sans","Segoe UI Variable Text","Segoe UI",system-ui,
               -apple-system,"Helvetica Neue",Arial,sans-serif;
   font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  background:var(--surface-0);
 }
+/* Фон под стеклом. Светлая тема тоже получает пятна: размывать плоскую
+   заливку бессмысленно, стекло на ней выглядит грязным серым слоем. */
+body::before {
+  content:""; position:fixed; inset:-10%; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(46% 40% at 8% 4%, rgba(30,64,175,.16), transparent 62%),
+    radial-gradient(44% 42% at 96% 8%, rgba(180,83,9,.12), transparent 62%),
+    radial-gradient(52% 46% at 84% 96%, rgba(37,106,191,.14), transparent 62%);
+  animation:drift 34s ease-in-out infinite alternate;
+}
+:root[data-theme="dark"] body::before,
+:root:where(:not([data-theme="light"])) body::before {
+  background:
+    radial-gradient(46% 40% at 6% 2%, rgba(59,130,246,.30), transparent 62%),
+    radial-gradient(44% 42% at 98% 10%, rgba(249,115,22,.20), transparent 62%),
+    radial-gradient(54% 48% at 86% 98%, rgba(74,58,167,.26), transparent 62%);
+}
+@keyframes drift {
+  from { transform:translate3d(0,0,0) scale(1); }
+  to   { transform:translate3d(-2.5%,1.5%,0) scale(1.06); }
+}
+
 .wrap { max-width:1180px; margin:0 auto; padding:var(--s6) var(--s5) 56px; }
+
+/* ---------- стеклянная пластина ---------- */
+.card, .tiles, .glass {
+  position:relative; isolation:isolate;
+  background:var(--glass-solid);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow), inset 0 1px 0 var(--glass-edge);
+}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  .card, .tiles, .glass {
+    background:var(--glass-bg);
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
+}
+/* Зерно: оно и делает стекло матовым, а не глянцевым. Лежит поверх подложки,
+   но под содержимым, и не ловит мышь. */
+.card::after, .tiles::after, .glass::after {
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  z-index:-1; opacity:var(--grain); mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='120' height='120' filter='url(%23n)' opacity='.5'/></svg>");
+}
 
 /* ---------- шапка ---------- */
 .top { display:flex; align-items:flex-start; gap:var(--s5); flex-wrap:wrap;
-       padding-bottom:var(--s4); border-bottom:2px solid var(--accent);
-       margin-bottom:var(--s6); }
+       padding-bottom:var(--s4); margin-bottom:var(--s6);
+       border-bottom:1px solid var(--line); position:relative; }
+.top::after { content:""; position:absolute; left:0; bottom:-1px; height:2px; width:100%;
+              background:linear-gradient(90deg, var(--accent), var(--amber) 55%, transparent);
+              border-radius:2px; transform-origin:left;
+              animation:sweep .9s var(--ease) both; }
+@keyframes sweep { from { transform:scaleX(0); opacity:0; } to { transform:scaleX(1); opacity:1; } }
 .top h1 { margin:0 0 4px; font-size:20px; font-weight:600; letter-spacing:-.015em; }
 .top .sub { color:var(--ink-2); font-size:12.5px; }
 .top .spacer { flex:1 1 auto; }
 .toolbar { display:flex; gap:var(--s1); align-items:center; }
 button.ghost {
-  font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--surface-1);
+  font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--glass-bg);
   border:1px solid var(--line-strong); border-radius:999px; padding:7px 16px;
-  min-height:32px; cursor:pointer;
-  transition:background .18s ease, color .18s ease, border-color .18s ease;
+  min-height:32px; cursor:pointer; position:relative; overflow:hidden;
+  backdrop-filter:blur(10px) saturate(140%); -webkit-backdrop-filter:blur(10px) saturate(140%);
+  transition:background .2s var(--ease), color .2s var(--ease),
+             border-color .2s var(--ease), transform .2s var(--ease),
+             box-shadow .2s var(--ease);
 }
 button.ghost:hover { background:var(--surface-2); color:var(--accent);
-                     border-color:var(--accent); }
+                     border-color:var(--accent); transform:translateY(-1px);
+                     box-shadow:0 8px 20px -12px rgba(30,64,175,.7); }
+button.ghost:active { transform:translateY(0); }
 button.ghost:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
 /* ---------- герой и плитки ---------- */
 .hero-row { display:grid; grid-template-columns:minmax(250px,1fr) 2fr;
             gap:var(--s2); margin-bottom:var(--s6); align-items:stretch; }
-.card { background:var(--surface-1); border:1px solid var(--line);
-        border-radius:18px; box-shadow:var(--shadow); }
+.card { border-radius:18px; }
+.card, .tiles { transition:transform .28s var(--ease), box-shadow .28s var(--ease); }
+.card:hover, .tiles:hover { box-shadow:var(--shadow-lift), inset 0 1px 0 var(--glass-edge); }
+.panel:hover, .hero:hover, .donut-card:hover { transform:translateY(-2px); }
+
 .hero { padding:var(--s4) var(--s5); display:flex; flex-direction:column;
-        justify-content:center; border-left:3px solid var(--amber); border-radius:18px; }
+        justify-content:center; border-radius:18px; overflow:hidden; }
+.hero::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+                background:linear-gradient(180deg, var(--amber), var(--accent));
+                z-index:1; }
 .hero .label { font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
                color:var(--ink-3); font-weight:600; }
 .hero .value { font-size:50px; font-weight:600; letter-spacing:-.03em;
-               line-height:1.04; margin:var(--s1) 0; }
+               line-height:1.04; margin:var(--s1) 0;
+               font-variant-numeric:tabular-nums;
+               background:linear-gradient(120deg, var(--ink) 30%, var(--accent));
+               -webkit-background-clip:text; background-clip:text; color:transparent; }
 .hero .note { font-size:12px; color:var(--ink-2); max-width:34ch; }
+
 .tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
-         background:var(--line); border-radius:18px; overflow:hidden;
-         border:1px solid var(--line); box-shadow:var(--shadow); }
-.tile { background:var(--surface-1); padding:var(--s2) var(--s3);
-        transition:background .18s ease; }
+         border-radius:18px; overflow:hidden; }
+.tile { padding:var(--s2) var(--s3); position:relative;
+        box-shadow:0 0 0 1px var(--line);
+        transition:background .2s var(--ease); }
 .tile:hover { background:var(--surface-2); }
 .tile .label { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
                color:var(--ink-3); font-weight:600; }
-.tile .value { font-size:24px; font-weight:600; letter-spacing:-.02em; margin-top:3px; }
+.tile .value { font-size:24px; font-weight:600; letter-spacing:-.02em; margin-top:3px;
+               font-variant-numeric:tabular-nums; }
 .tile .hint { font-size:11.5px; color:var(--ink-2); margin-top:1px; }
 
 /* ---------- секции ---------- */
@@ -120,7 +206,8 @@ section { margin-bottom:var(--s6); }
         flex-wrap:wrap; }
 .head h2 { margin:0; font-size:15px; font-weight:600; letter-spacing:-.01em; }
 .head h2::before { content:""; display:inline-block; width:3px; height:13px;
-                   background:var(--accent); border-radius:2px;
+                   background:linear-gradient(180deg, var(--accent), var(--amber));
+                   border-radius:2px;
                    margin-right:var(--s1); transform:translateY(1px); }
 .head .spacer { flex:1 1 auto; }
 .cap { color:var(--ink-2); font-size:12.5px; margin:0 0 var(--s2); max-width:78ch; }
@@ -138,6 +225,33 @@ svg text { font-family:inherit; }
 .axis-strong { font-size:11.5px; fill:var(--ink-2); }
 .grid { stroke:var(--line); stroke-width:1; }
 .dlabel { font-size:11.5px; fill:var(--ink-2); font-weight:550; }
+
+/* ---------- круговые диаграммы ---------- */
+.donuts { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s2); }
+.donut-card { border-radius:18px; padding:var(--s3) var(--s3) var(--s2);
+              display:flex; flex-direction:column; }
+.donut-card h3 { margin:0 0 2px; font-size:12.5px; font-weight:600; }
+.donut-card .sub { font-size:11.5px; color:var(--ink-3); margin-bottom:var(--s1); }
+svg.donut { width:100%; max-width:210px; margin:2px auto var(--s1); }
+.donut .arc { transition:stroke-dasharray .9s var(--ease), opacity .2s ease,
+                         stroke-width .2s ease; cursor:default; }
+.donut.dim .arc { opacity:.28; }
+.donut.dim .arc.on { opacity:1; stroke-width:30; }
+.donut-total { font-size:19px; font-weight:600; fill:var(--ink);
+               font-variant-numeric:tabular-nums; }
+.donut-sub { font-size:10.5px; fill:var(--ink-3); }
+.dlegend { list-style:none; margin:auto 0 0; padding:0; }
+.dlegend li { display:flex; align-items:center; gap:8px; padding:4px 0;
+              border-top:1px solid var(--line); font-size:12px; color:var(--ink-2);
+              transition:color .18s ease; }
+.dlegend li:hover { color:var(--ink); }
+.dlegend .nm { flex:1 1 auto; overflow:hidden; text-overflow:ellipsis;
+               white-space:nowrap; }
+.dlegend .vl { font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
+               font-size:11px; color:var(--ink); font-variant-numeric:tabular-nums; }
+.dlegend .pc { width:52px; text-align:right; color:var(--ink-3);
+               font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
+               font-size:11px; }
 
 /* ---------- таблицы ---------- */
 .tablewrap { overflow-x:auto; margin-top:2px; }
@@ -174,30 +288,61 @@ code { font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
 
 /* ---------- тултип ---------- */
 #tip { position:fixed; pointer-events:none; z-index:50; opacity:0;
-       transition:opacity .15s ease; background:var(--surface-1); color:var(--ink);
-       border:1px solid var(--line-strong); border-radius:8px;
-       padding:var(--s1) var(--s2);
-       box-shadow:0 8px 28px -10px rgba(0,0,0,.4); font-size:12.5px; max-width:280px; }
+       transition:opacity .15s ease; color:var(--ink);
+       border:1px solid var(--line-strong); border-radius:10px;
+       padding:var(--s1) var(--s2); background:var(--glass-solid);
+       box-shadow:0 12px 36px -12px rgba(0,0,0,.5); font-size:12.5px; max-width:280px; }
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  #tip { background:var(--glass-bg);
+         backdrop-filter:blur(18px) saturate(160%);
+         -webkit-backdrop-filter:blur(18px) saturate(160%); }
+}
 #tip .t { font-weight:600; margin-bottom:5px; }
 #tip .r { display:flex; justify-content:space-between; gap:var(--s4); color:var(--ink-2); }
 #tip .r b { color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums;
             font-family:"Fira Code","Cascadia Mono",Consolas,monospace; }
 .hit { fill:transparent; }
 
-/* ---------- проявление секций (motion 2/10, минимальное) ---------- */
-.reveal { opacity:0; transform:translateY(10px);
-          transition:opacity .35s ease-out, transform .35s ease-out; }
-.reveal.in { opacity:1; transform:none; }
+/* ---------- анимации появления ----------
+   Motion остаётся сдержанным: секция всплывает один раз при входе в вьюпорт,
+   марки графиков вырастают из своей базовой линии. Ничего не двигается
+   повторно и ничего не мигает - под prefers-reduced-motion всё выключено. */
+.reveal { opacity:0; transform:translateY(14px); }
+.reveal.in { opacity:1; transform:none;
+             transition:opacity .5s var(--ease), transform .5s var(--ease); }
+.hero, .tiles { animation:rise .6s var(--ease) both; }
+.tiles { animation-delay:.08s; }
+@keyframes rise { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+
+/* Столбики и полосы: масштаб от своей базы. transform-box:fill-box переводит
+   transform-origin в систему координат самой марки. */
+.grow-y, .grow-x { transform-box:fill-box; }
+.grow-y { transform-origin:bottom; }
+.grow-x { transform-origin:left; }
+.in .grow-y { animation:growY .7s var(--ease) both; }
+.in .grow-x { animation:growX .7s var(--ease) both; }
+@keyframes growY { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+@keyframes growX { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+.fade-in { opacity:0; }
+.in .fade-in { animation:fadeIn .5s ease-out .35s both; }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+.pop { transform-box:fill-box; transform-origin:center; }
+.in .pop { animation:pop .5s var(--ease) both; }
+@keyframes pop { from { opacity:0; transform:scale(.4); } to { opacity:1; transform:scale(1); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration:.01ms !important; transition-duration:.01ms !important;
+    animation-duration:.01ms !important; animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
   }
   .reveal { opacity:1; transform:none; }
+  body::before { animation:none; }
 }
 
 /* ---------- контрольные точки 1440 / 1024 / 768 / 375 ---------- */
 @media (max-width:1024px) { .wrap { max-width:100%; } }
+@media (max-width:960px) { .donuts { grid-template-columns:1fr; }
+                           svg.donut { max-width:240px; } }
 @media (max-width:860px) {
   .hero-row { grid-template-columns:1fr; }
   .tiles { grid-template-columns:repeat(2,1fr); }
@@ -216,9 +361,9 @@ code { font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
 <div class="top">
   <div>
     <h1>Расход токенов Claude Code</h1>
-    <div class="sub">2026-09-01 — 2026-09-07 · 2 562 вызовов ·
-      37 сессий · 14 проектов<br>
-      Собрано 2026-09-07 19:10</div>
+    <div class="sub">2026-09-01 — 2026-09-07 · 2 575 вызовов ·
+      38 сессий · 14 проектов<br>
+      Собрано 2026-09-07 20:52</div>
   </div>
   <div class="spacer"></div>
   <div class="toolbar">
@@ -230,56 +375,62 @@ code { font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
 <div class="hero-row">
   <div class="card hero">
     <div class="label">Стоимость по тарифам API</div>
-    <div class="value">$224.02</div>
+    <div class="value" id="hero-value">$224.38</div>
     <div class="note">Это оценка «во сколько обошлось бы то же самое по тарифам
       Anthropic API». У вас подписка Claude Pro — реальный платёж фиксированный
       и от этой цифры не зависит.</div>
   </div>
-  <div class="tiles"><div class="tile"><div class="label">Токенов всего</div><div class="value">506,8 млн</div><div class="hint">98,0 % — чтение кэша</div></div><div class="tile"><div class="label">Вызовов к API</div><div class="value">2 562</div><div class="hint">в среднем $0.09 за вызов</div></div><div class="tile"><div class="label">Сессий</div><div class="value">37</div><div class="hint">в 14 проектах</div></div><div class="tile"><div class="label">Дней с активностью</div><div class="value">7</div><div class="hint">2026-09-01 … 2026-09-07</div></div><div class="tile"><div class="label">Попаданий в кэш</div><div class="value">98,3 %</div><div class="hint">доля чтения во входящих</div></div><div class="tile"><div class="label">Thinking</div><div class="value">663 тыс.</div><div class="hint">39,4 % от всего output</div></div></div>
+  <div class="tiles"><div class="tile"><div class="label">Токенов всего</div><div class="value">507,7 млн</div><div class="hint">98,0 % — чтение кэша</div></div><div class="tile"><div class="label">Вызовов к API</div><div class="value">2 575</div><div class="hint">в среднем $0.09 за вызов</div></div><div class="tile"><div class="label">Сессий</div><div class="value">38</div><div class="hint">в 14 проектах</div></div><div class="tile"><div class="label">Дней с активностью</div><div class="value">7</div><div class="hint">2026-09-01 … 2026-09-07</div></div><div class="tile"><div class="label">Попаданий в кэш</div><div class="value">98,3 %</div><div class="hint">доля чтения во входящих</div></div><div class="tile"><div class="label">Thinking</div><div class="value">665 тыс.</div><div class="hint">39,3 % от всего output</div></div></div>
 </div>
 
 
+<section id="structure">
+  <div class="head"><h2>Структура расхода</h2><div class="spacer"></div><button class="ghost" data-toggle>Показать таблицей</button></div>
+  <p class="cap">Одна и та же сумма — $224.38 — разложена тремя способами: по типам токенов, по моделям и по проектам. Кольцо, а не круг: в центре помещается итог, а доли сравниваются по длине дуги — на площадях секторов глаз ошибается систематически. Наведите на дугу или строку легенды, чтобы выделить её.</p>
+  <div class="donuts chartbox" id="chart-donuts"></div>
+  <div class="tablewrap" hidden><table><thead><tr><th>Тип токенов</th><th>Токенов</th><th>Стоимость</th><th>Доля</th></tr></thead><tbody><tr><td>Чтение кэша</td><td>497,4 млн</td><td>$150.69</td><td>67,2 %</td></tr><tr><td>Запись кэша</td><td>8,6 млн</td><td>$46.12</td><td>20,6 %</td></tr><tr><td>Output</td><td>1,7 млн</td><td>$27.56</td><td>12,3 %</td></tr><tr><td>Input</td><td>5 150</td><td>$0.02</td><td>0,0 %</td></tr></tbody><tfoot><tr><td>Итого</td><td>507,7 млн</td><td>$224.38</td><td>100 %</td></tr></tfoot></table></div>
+</section>
 <section id="days">
   <div class="head"><h2>Расход по дням</h2><div class="spacer"></div><button class="ghost" data-toggle>Показать таблицей</button></div>
-  <p class="cap">Столбик — стоимость дня, разложенная на то, из чего она сложилась. Ровно поэтому здесь деньги, а не токены: чтение кэша даёт 98,0 % объёма, и в шкале токенов остальные три типа просто не видны. В деньгах пропорция честнее — <b>67,2 % чтение кэша, 20,5 % запись, 12,3 % output</b>. Входящие токены — $0.02 за всю историю, отдельным сегментом их нарисовать нельзя, они есть в таблице.</p>
+  <p class="cap">Столбик — стоимость дня, разложенная на то, из чего она сложилась. Ровно поэтому здесь деньги, а не токены: чтение кэша даёт 98,0 % объёма, и в шкале токенов остальные три типа просто не видны. В деньгах пропорция честнее — <b>67,2 % чтение кэша, 20,6 % запись, 12,3 % output</b>. Входящие токены — $0.02 за всю историю, отдельным сегментом их нарисовать нельзя, они есть в таблице.</p>
   <div class="card panel chartbox"><div class="legend"><span><i class="swatch" style="background:var(--series-cr)"></i>Чтение кэша</span><span><i class="swatch" style="background:var(--series-cw)"></i>Запись кэша</span><span><i class="swatch" style="background:var(--series-out)"></i>Output</span></div><div id="chart-daily"></div></div>
-  <div class="tablewrap" hidden><table><thead><tr><th>Дата</th><th>Вызовов</th><th>Сессий</th><th>Input</th><th>Output</th><th>Запись кэша</th><th>Чтение кэша</th><th>Стоимость</th></tr></thead><tbody><tr><td>2026-09-01 <span class="mono">вт</span></td><td>785</td><td>8</td><td>1 570</td><td>450 тыс.</td><td>3,8 млн</td><td>198,1 млн</td><td>$58.77</td></tr><tr><td>2026-09-02 <span class="mono">ср</span></td><td>352</td><td>9</td><td>704</td><td>252 тыс.</td><td>1,6 млн</td><td>57,7 млн</td><td>$31.88</td></tr><tr><td>2026-09-03 <span class="mono">чт</span></td><td>66</td><td>1</td><td>132</td><td>100 тыс.</td><td>160 тыс.</td><td>9,0 млн</td><td>$3.43</td></tr><tr><td>2026-09-04 <span class="mono">пт</span></td><td>6</td><td>1</td><td>12</td><td>8 091</td><td>22 тыс.</td><td>292 тыс.</td><td>$0.23</td></tr><tr><td>2026-09-05 <span class="mono">сб</span></td><td>23</td><td>2</td><td>46</td><td>39 тыс.</td><td>69 тыс.</td><td>1,4 млн</td><td>$0.94</td></tr><tr><td>2026-09-06 <span class="mono">вс</span></td><td>724</td><td>12</td><td>1 448</td><td>480 тыс.</td><td>1,7 млн</td><td>114,6 млн</td><td>$65.82</td></tr><tr><td>2026-09-07 <span class="mono">пн</span></td><td>606</td><td>6</td><td>1 212</td><td>355 тыс.</td><td>1,3 млн</td><td>115,5 млн</td><td>$62.96</td></tr></tbody><tfoot><tr><td>Итого</td><td>2 562</td><td>37</td><td>5 124</td><td>1,7 млн</td><td>8,6 млн</td><td>496,6 млн</td><td>$224.02</td></tr></tfoot></table></div>
+  <div class="tablewrap" hidden><table><thead><tr><th>Дата</th><th>Вызовов</th><th>Сессий</th><th>Input</th><th>Output</th><th>Запись кэша</th><th>Чтение кэша</th><th>Стоимость</th></tr></thead><tbody><tr><td>2026-09-01 <span class="mono">вт</span></td><td>785</td><td>8</td><td>1 570</td><td>450 тыс.</td><td>3,8 млн</td><td>198,1 млн</td><td>$58.77</td></tr><tr><td>2026-09-02 <span class="mono">ср</span></td><td>352</td><td>9</td><td>704</td><td>252 тыс.</td><td>1,6 млн</td><td>57,7 млн</td><td>$31.88</td></tr><tr><td>2026-09-03 <span class="mono">чт</span></td><td>66</td><td>1</td><td>132</td><td>100 тыс.</td><td>160 тыс.</td><td>9,0 млн</td><td>$3.43</td></tr><tr><td>2026-09-04 <span class="mono">пт</span></td><td>6</td><td>1</td><td>12</td><td>8 091</td><td>22 тыс.</td><td>292 тыс.</td><td>$0.23</td></tr><tr><td>2026-09-05 <span class="mono">сб</span></td><td>23</td><td>2</td><td>46</td><td>39 тыс.</td><td>69 тыс.</td><td>1,4 млн</td><td>$0.94</td></tr><tr><td>2026-09-06 <span class="mono">вс</span></td><td>724</td><td>12</td><td>1 448</td><td>480 тыс.</td><td>1,7 млн</td><td>114,6 млн</td><td>$65.82</td></tr><tr><td>2026-09-07 <span class="mono">пн</span></td><td>619</td><td>7</td><td>1 238</td><td>361 тыс.</td><td>1,3 млн</td><td>116,3 млн</td><td>$63.31</td></tr></tbody><tfoot><tr><td>Итого</td><td>2 575</td><td>38</td><td>5 150</td><td>1,7 млн</td><td>8,6 млн</td><td>497,4 млн</td><td>$224.38</td></tr></tfoot></table></div>
 </section>
 <section id="projects">
   <div class="head"><h2>Проекты</h2><div class="spacer"></div><button class="ghost" data-toggle>Показать таблицей</button></div>
-  <p class="cap"><b>PolitCompass</b> забирает 46,8 % всей стоимости — $104.82 за 1 107 вызовов в 13 сессиях. Подкаталоги схлопнуты в родительский проект: работа в <code>RusSubjectMap\geo_raw</code> считается тем же проектом, что и работа в его корне.</p>
+  <p class="cap"><b>PolitCompass</b> забирает 46,7 % всей стоимости — $104.82 за 1 107 вызовов в 13 сессиях. Подкаталоги схлопнуты в родительский проект: работа в <code>RusSubjectMap\geo_raw</code> считается тем же проектом, что и работа в его корне.</p>
   <div class="card panel chartbox"><div id="chart-projects"></div></div>
-  <div class="tablewrap" hidden><table><thead><tr><th>Проект</th><th>Сессий</th><th>Вызовов</th><th>Output</th><th>Запись кэша</th><th>Чтение кэша</th><th>Стоимость</th><th>Доля</th></tr></thead><tbody><tr><td>PolitCompass <span class="mono">E:\PolitCompass</span></td><td>13</td><td>1 107</td><td>669 тыс.</td><td>2,5 млн</td><td>193,8 млн</td><td>$104.82</td><td>46,8 %</td></tr><tr><td>RusSubjectMap <span class="mono">C:\Users\Антон\Documents\RusSubjectMap</span></td><td>5</td><td>568</td><td>362 тыс.</td><td>3,2 млн</td><td>178,9 млн</td><td>$52.00</td><td>23,2 %</td></tr><tr><td>Apple Editor <span class="mono">C:\Users\Антон\Documents\Apple Editor</span></td><td>2</td><td>349</td><td>234 тыс.</td><td>1,6 млн</td><td>58,8 млн</td><td>$31.70</td><td>14,1 %</td></tr><tr><td>ClaudeCUsD <span class="mono">E:\ClaudeCUsD</span></td><td>1</td><td>140</td><td>139 тыс.</td><td>298 тыс.</td><td>30,6 млн</td><td>$21.78</td><td>9,7 %</td></tr><tr><td>Attention Timeline <span class="mono">E:\Attention Timeline</span></td><td>1</td><td>66</td><td>100 тыс.</td><td>160 тыс.</td><td>9,0 млн</td><td>$3.43</td><td>1,5 %</td></tr><tr><td>Claude Code <span class="mono">C:\Users\Антон\Сравнение ИИ\Claude Code</span></td><td>1</td><td>102</td><td>33 тыс.</td><td>289 тыс.</td><td>8,8 млн</td><td>$3.24</td><td>1,4 %</td></tr><tr><td>AnalogovNet <span class="mono">C:\Users\Антон\Documents\AnalogovNet</span></td><td>3</td><td>75</td><td>43 тыс.</td><td>127 тыс.</td><td>6,2 млн</td><td>$2.17</td><td>1,0 %</td></tr><tr><td>windows-11-25h2-1-python-2 <span class="mono">C:\Users\Антон\Documents\Codex\2026-06-14\windows-11-25h2-1-python-2</span></td><td>1</td><td>45</td><td>32 тыс.</td><td>147 тыс.</td><td>4,0 млн</td><td>$1.72</td><td>0,8 %</td></tr><tr><td>System32 <span class="mono">C:\Windows\System32</span></td><td>3</td><td>37</td><td>12 тыс.</td><td>66 тыс.</td><td>2,4 млн</td><td>$0.87</td><td>0,4 %</td></tr><tr><td>Антон <span class="mono">C:\Users\Антон</span></td><td>3</td><td>32</td><td>5 281</td><td>109 тыс.</td><td>1,7 млн</td><td>$0.84</td><td>0,4 %</td></tr><tr><td>paper-plane <span class="mono">C:\Users\Антон\Documents\paper-plane</span></td><td>1</td><td>13</td><td>20 тыс.</td><td>36 тыс.</td><td>819 тыс.</td><td>$0.51</td><td>0,2 %</td></tr><tr><td>MSearch1340 <span class="mono">E:\MSearch1340</span></td><td>1</td><td>10</td><td>19 тыс.</td><td>32 тыс.</td><td>541 тыс.</td><td>$0.42</td><td>0,2 %</td></tr><tr><td>scratch-2026-09-01-7395d5 <span class="mono">C:\Users\Антон\AppData\Roaming\Claude\scratch-workspaces\738a6674-6149-4f0d-bebc-2e0edfc794d8\362c100c-d3a5-4bd0-818f-5b01bf526e38\scratch-2026-09-01-7395d5</span></td><td>1</td><td>12</td><td>5 384</td><td>23 тыс.</td><td>716 тыс.</td><td>$0.29</td><td>0,1 %</td></tr><tr><td>Qr-Code and barcode generator <span class="mono">C:\Users\Антон\Documents\Qr-Code and barcode generator</span></td><td>1</td><td>6</td><td>8 091</td><td>22 тыс.</td><td>292 тыс.</td><td>$0.23</td><td>0,1 %</td></tr></tbody></table></div>
+  <div class="tablewrap" hidden><table><thead><tr><th>Проект</th><th>Сессий</th><th>Вызовов</th><th>Output</th><th>Запись кэша</th><th>Чтение кэша</th><th>Стоимость</th><th>Доля</th></tr></thead><tbody><tr><td>PolitCompass <span class="mono">E:\PolitCompass</span></td><td>13</td><td>1 107</td><td>669 тыс.</td><td>2,5 млн</td><td>193,8 млн</td><td>$104.82</td><td>46,7 %</td></tr><tr><td>RusSubjectMap <span class="mono">C:\Users\Антон\Documents\RusSubjectMap</span></td><td>5</td><td>568</td><td>362 тыс.</td><td>3,2 млн</td><td>178,9 млн</td><td>$52.00</td><td>23,2 %</td></tr><tr><td>Apple Editor <span class="mono">C:\Users\Антон\Documents\Apple Editor</span></td><td>2</td><td>349</td><td>234 тыс.</td><td>1,6 млн</td><td>58,8 млн</td><td>$31.70</td><td>14,1 %</td></tr><tr><td>ClaudeCUsD <span class="mono">E:\ClaudeCUsD</span></td><td>2</td><td>153</td><td>145 тыс.</td><td>331 тыс.</td><td>31,5 млн</td><td>$22.14</td><td>9,9 %</td></tr><tr><td>Attention Timeline <span class="mono">E:\Attention Timeline</span></td><td>1</td><td>66</td><td>100 тыс.</td><td>160 тыс.</td><td>9,0 млн</td><td>$3.43</td><td>1,5 %</td></tr><tr><td>Claude Code <span class="mono">C:\Users\Антон\Сравнение ИИ\Claude Code</span></td><td>1</td><td>102</td><td>33 тыс.</td><td>289 тыс.</td><td>8,8 млн</td><td>$3.24</td><td>1,4 %</td></tr><tr><td>AnalogovNet <span class="mono">C:\Users\Антон\Documents\AnalogovNet</span></td><td>3</td><td>75</td><td>43 тыс.</td><td>127 тыс.</td><td>6,2 млн</td><td>$2.17</td><td>1,0 %</td></tr><tr><td>windows-11-25h2-1-python-2 <span class="mono">C:\Users\Антон\Documents\Codex\2026-06-14\windows-11-25h2-1-python-2</span></td><td>1</td><td>45</td><td>32 тыс.</td><td>147 тыс.</td><td>4,0 млн</td><td>$1.72</td><td>0,8 %</td></tr><tr><td>System32 <span class="mono">C:\Windows\System32</span></td><td>3</td><td>37</td><td>12 тыс.</td><td>66 тыс.</td><td>2,4 млн</td><td>$0.87</td><td>0,4 %</td></tr><tr><td>Антон <span class="mono">C:\Users\Антон</span></td><td>3</td><td>32</td><td>5 281</td><td>109 тыс.</td><td>1,7 млн</td><td>$0.84</td><td>0,4 %</td></tr><tr><td>paper-plane <span class="mono">C:\Users\Антон\Documents\paper-plane</span></td><td>1</td><td>13</td><td>20 тыс.</td><td>36 тыс.</td><td>819 тыс.</td><td>$0.51</td><td>0,2 %</td></tr><tr><td>MSearch1340 <span class="mono">E:\MSearch1340</span></td><td>1</td><td>10</td><td>19 тыс.</td><td>32 тыс.</td><td>541 тыс.</td><td>$0.42</td><td>0,2 %</td></tr><tr><td>scratch-2026-09-01-7395d5 <span class="mono">C:\Users\Антон\AppData\Roaming\Claude\scratch-workspaces\738a6674-6149-4f0d-bebc-2e0edfc794d8\362c100c-d3a5-4bd0-818f-5b01bf526e38\scratch-2026-09-01-7395d5</span></td><td>1</td><td>12</td><td>5 384</td><td>23 тыс.</td><td>716 тыс.</td><td>$0.29</td><td>0,1 %</td></tr><tr><td>Qr-Code and barcode generator <span class="mono">C:\Users\Антон\Documents\Qr-Code and barcode generator</span></td><td>1</td><td>6</td><td>8 091</td><td>22 тыс.</td><td>292 тыс.</td><td>$0.23</td><td>0,1 %</td></tr></tbody></table></div>
 </section>
 <section id="models">
   <div class="head"><h2>Модели</h2><div class="spacer"></div><button class="ghost" data-toggle>Показать таблицей</button></div>
   <p class="cap">Opus дороже за токен, но вы зовёте его реже. В пересчёте на один вызов разрыв нагляднее всего: <b>$0.14</b> у claude-opus-5 против <b>$0.06</b> у claude-sonnet-5.</p>
   <div class="card panel chartbox"><div class="legend"><span><i class="swatch" style="background:var(--model-a)"></i>claude-opus-5</span><span><i class="swatch" style="background:var(--model-b)"></i>claude-sonnet-5</span></div><div id="chart-models"></div></div>
-  <div class="tablewrap" hidden><table><thead><tr><th>Модель</th><th>Вызовов</th><th>Output</th><th>Thinking</th><th>Чтение кэша</th><th>Цена вызова</th><th>Стоимость</th><th>Доля</th></tr></thead><tbody><tr><td><span class="key"><i class="swatch" style="background:var(--model-a)"></i>claude-opus-5</span></td><td>902</td><td>711 тыс.</td><td>193 тыс.</td><td>170,7 млн</td><td>$0.14</td><td>$123.48</td><td>55,1 %</td></tr><tr><td><span class="key"><i class="swatch" style="background:var(--model-b)"></i>claude-sonnet-5</span></td><td>1 660</td><td>973 тыс.</td><td>470 тыс.</td><td>325,9 млн</td><td>$0.06</td><td>$100.54</td><td>44,9 %</td></tr></tbody></table></div>
+  <div class="tablewrap" hidden><table><thead><tr><th>Модель</th><th>Вызовов</th><th>Output</th><th>Thinking</th><th>Чтение кэша</th><th>Цена вызова</th><th>Стоимость</th><th>Доля</th></tr></thead><tbody><tr><td><span class="key"><i class="swatch" style="background:var(--model-a)"></i>claude-opus-5</span></td><td>902</td><td>711 тыс.</td><td>193 тыс.</td><td>170,7 млн</td><td>$0.14</td><td>$123.48</td><td>55,0 %</td></tr><tr><td><span class="key"><i class="swatch" style="background:var(--model-b)"></i>claude-sonnet-5</span></td><td>1 673</td><td>978 тыс.</td><td>472 тыс.</td><td>326,7 млн</td><td>$0.06</td><td>$100.90</td><td>45,0 %</td></tr></tbody></table></div>
 </section>
 <section id="cross">
   <div class="head"><h2>Модель × проект</h2><div class="spacer"></div></div>
   <p class="cap">Где какая модель работала. В ячейке — стоимость и число вызовов.</p>
-  <div class="card panel"><div class="tablewrap"><table><thead><tr><th>Проект</th><th>claude-opus-5</th><th>claude-sonnet-5</th></tr></thead><tbody><tr><td>PolitCompass</td><td>$82.57 <span class="mono">632</span></td><td>$22.25 <span class="mono">475</span></td></tr><tr><td>RusSubjectMap</td><td><span class="mono">—</span></td><td>$52.00 <span class="mono">568</span></td></tr><tr><td>Apple Editor</td><td>$19.13 <span class="mono">130</span></td><td>$12.56 <span class="mono">219</span></td></tr><tr><td>ClaudeCUsD</td><td>$21.78 <span class="mono">140</span></td><td><span class="mono">—</span></td></tr><tr><td>Attention Timeline</td><td><span class="mono">—</span></td><td>$3.43 <span class="mono">66</span></td></tr><tr><td>Claude Code</td><td><span class="mono">—</span></td><td>$3.24 <span class="mono">102</span></td></tr><tr><td>AnalogovNet</td><td><span class="mono">—</span></td><td>$2.17 <span class="mono">75</span></td></tr><tr><td>windows-11-25h2-1-python-2</td><td><span class="mono">—</span></td><td>$1.72 <span class="mono">45</span></td></tr><tr><td>System32</td><td><span class="mono">—</span></td><td>$0.87 <span class="mono">37</span></td></tr><tr><td>Антон</td><td><span class="mono">—</span></td><td>$0.84 <span class="mono">32</span></td></tr><tr><td>paper-plane</td><td><span class="mono">—</span></td><td>$0.51 <span class="mono">13</span></td></tr><tr><td>MSearch1340</td><td><span class="mono">—</span></td><td>$0.42 <span class="mono">10</span></td></tr><tr><td>scratch-2026-09-01-7395d5</td><td><span class="mono">—</span></td><td>$0.29 <span class="mono">12</span></td></tr><tr><td>Qr-Code and barcode generator</td><td><span class="mono">—</span></td><td>$0.23 <span class="mono">6</span></td></tr></tbody></table></div></div>
+  <div class="card panel"><div class="tablewrap"><table><thead><tr><th>Проект</th><th>claude-opus-5</th><th>claude-sonnet-5</th></tr></thead><tbody><tr><td>PolitCompass</td><td>$82.57 <span class="mono">632</span></td><td>$22.25 <span class="mono">475</span></td></tr><tr><td>RusSubjectMap</td><td><span class="mono">—</span></td><td>$52.00 <span class="mono">568</span></td></tr><tr><td>Apple Editor</td><td>$19.13 <span class="mono">130</span></td><td>$12.56 <span class="mono">219</span></td></tr><tr><td>ClaudeCUsD</td><td>$21.78 <span class="mono">140</span></td><td>$0.36 <span class="mono">13</span></td></tr><tr><td>Attention Timeline</td><td><span class="mono">—</span></td><td>$3.43 <span class="mono">66</span></td></tr><tr><td>Claude Code</td><td><span class="mono">—</span></td><td>$3.24 <span class="mono">102</span></td></tr><tr><td>AnalogovNet</td><td><span class="mono">—</span></td><td>$2.17 <span class="mono">75</span></td></tr><tr><td>windows-11-25h2-1-python-2</td><td><span class="mono">—</span></td><td>$1.72 <span class="mono">45</span></td></tr><tr><td>System32</td><td><span class="mono">—</span></td><td>$0.87 <span class="mono">37</span></td></tr><tr><td>Антон</td><td><span class="mono">—</span></td><td>$0.84 <span class="mono">32</span></td></tr><tr><td>paper-plane</td><td><span class="mono">—</span></td><td>$0.51 <span class="mono">13</span></td></tr><tr><td>MSearch1340</td><td><span class="mono">—</span></td><td>$0.42 <span class="mono">10</span></td></tr><tr><td>scratch-2026-09-01-7395d5</td><td><span class="mono">—</span></td><td>$0.29 <span class="mono">12</span></td></tr><tr><td>Qr-Code and barcode generator</td><td><span class="mono">—</span></td><td>$0.23 <span class="mono">6</span></td></tr></tbody></table></div></div>
   
 </section>
 <section id="hours">
   <div class="head"><h2>Часы суток</h2><div class="spacer"></div><button class="ghost" data-toggle>Показать таблицей</button></div>
   <p class="cap">Локальное время. Видно, что рабочий день разорван: утренний заход, провал в середине дня и главный пик ближе к вечеру.</p>
   <div class="card panel chartbox"><div id="chart-hours"></div></div>
-  <div class="tablewrap" hidden><table><thead><tr><th>Час</th><th>Вызовов</th><th>Output</th><th>Стоимость</th></tr></thead><tbody><tr><td>06:00</td><td>12</td><td>22 тыс.</td><td>$0.60</td></tr><tr><td>07:00</td><td>443</td><td>313 тыс.</td><td>$33.13</td></tr><tr><td>08:00</td><td>99</td><td>53 тыс.</td><td>$9.71</td></tr><tr><td>10:00</td><td>3</td><td>12 тыс.</td><td>$0.29</td></tr><tr><td>13:00</td><td>49</td><td>85 тыс.</td><td>$6.49</td></tr><tr><td>14:00</td><td>143</td><td>55 тыс.</td><td>$20.16</td></tr><tr><td>15:00</td><td>145</td><td>66 тыс.</td><td>$5.50</td></tr><tr><td>16:00</td><td>486</td><td>247 тыс.</td><td>$39.46</td></tr><tr><td>17:00</td><td>251</td><td>239 тыс.</td><td>$20.87</td></tr><tr><td>18:00</td><td>269</td><td>215 тыс.</td><td>$25.66</td></tr><tr><td>19:00</td><td>210</td><td>118 тыс.</td><td>$16.70</td></tr><tr><td>20:00</td><td>53</td><td>25 тыс.</td><td>$2.33</td></tr><tr><td>21:00</td><td>204</td><td>114 тыс.</td><td>$9.70</td></tr><tr><td>22:00</td><td>183</td><td>113 тыс.</td><td>$30.85</td></tr><tr><td>23:00</td><td>12</td><td>5 332</td><td>$2.55</td></tr></tbody></table></div>
+  <div class="tablewrap" hidden><table><thead><tr><th>Час</th><th>Вызовов</th><th>Output</th><th>Стоимость</th></tr></thead><tbody><tr><td>06:00</td><td>12</td><td>22 тыс.</td><td>$0.60</td></tr><tr><td>07:00</td><td>443</td><td>313 тыс.</td><td>$33.13</td></tr><tr><td>08:00</td><td>99</td><td>53 тыс.</td><td>$9.71</td></tr><tr><td>10:00</td><td>3</td><td>12 тыс.</td><td>$0.29</td></tr><tr><td>13:00</td><td>49</td><td>85 тыс.</td><td>$6.49</td></tr><tr><td>14:00</td><td>143</td><td>55 тыс.</td><td>$20.16</td></tr><tr><td>15:00</td><td>145</td><td>66 тыс.</td><td>$5.50</td></tr><tr><td>16:00</td><td>486</td><td>247 тыс.</td><td>$39.46</td></tr><tr><td>17:00</td><td>251</td><td>239 тыс.</td><td>$20.87</td></tr><tr><td>18:00</td><td>269</td><td>215 тыс.</td><td>$25.66</td></tr><tr><td>19:00</td><td>210</td><td>118 тыс.</td><td>$16.70</td></tr><tr><td>20:00</td><td>66</td><td>31 тыс.</td><td>$2.68</td></tr><tr><td>21:00</td><td>204</td><td>114 тыс.</td><td>$9.70</td></tr><tr><td>22:00</td><td>183</td><td>113 тыс.</td><td>$30.85</td></tr><tr><td>23:00</td><td>12</td><td>5 332</td><td>$2.55</td></tr></tbody></table></div>
 </section>
 <section id="cache">
   <div class="head"><h2>Эффективность кэша</h2><div class="spacer"></div><button class="ghost" data-toggle>Показать таблицей</button></div>
-  <p class="cap">Доля чтения кэша во всех входящих токенах — чем выше, тем реже контекст пересобирается с нуля. Показаны проекты от 10 вызовов. Отдельно: весь ваш кэш записывается на час (тариф 2× от базового input), а не на пять минут (1.25×). Разница за всю историю — <b>$16.97</b> из $224.02: столько стоит то, что кэш живёт дольше. Шкала графика приближена к данным — все проекты лежат в узкой полосе, и от нуля разницы между ними не видно вовсе.</p>
+  <p class="cap">Доля чтения кэша во всех входящих токенах — чем выше, тем реже контекст пересобирается с нуля. Показаны проекты от 10 вызовов. Отдельно: весь ваш кэш записывается на час (тариф 2× от базового input), а не на пять минут (1.25×). Разница за всю историю — <b>$17.02</b> из $224.38: столько стоит то, что кэш живёт дольше. Шкала графика приближена к данным — все проекты лежат в узкой полосе, и от нуля разницы между ними не видно вовсе.</p>
   <div class="card panel chartbox"><div id="chart-cache"></div></div>
-  <div class="tablewrap" hidden><table><thead><tr><th>Проект</th><th>Доля чтения</th><th>Чтение кэша</th><th>Запись кэша</th><th>Стоимость (кэш 1ч)</th><th>Было бы при 5 мин</th><th>Разница</th></tr></thead><tbody><tr><td>PolitCompass</td><td>98,7 %</td><td>193,8 млн</td><td>2,5 млн</td><td>$104.82</td><td>$98.57</td><td>$6.25</td></tr><tr><td>RusSubjectMap</td><td>98,3 %</td><td>178,9 млн</td><td>3,2 млн</td><td>$52.00</td><td>$47.35</td><td>$4.65</td></tr><tr><td>Apple Editor</td><td>97,3 %</td><td>58,8 млн</td><td>1,6 млн</td><td>$31.70</td><td>$28.26</td><td>$3.44</td></tr><tr><td>ClaudeCUsD</td><td>99,0 %</td><td>30,6 млн</td><td>298 тыс.</td><td>$21.78</td><td>$20.66</td><td>$1.12</td></tr><tr><td>Attention Timeline</td><td>98,3 %</td><td>9,0 млн</td><td>160 тыс.</td><td>$3.43</td><td>$3.19</td><td>$0.24</td></tr><tr><td>Claude Code</td><td>96,8 %</td><td>8,8 млн</td><td>289 тыс.</td><td>$3.24</td><td>$2.81</td><td>$0.43</td></tr><tr><td>AnalogovNet</td><td>98,0 %</td><td>6,2 млн</td><td>127 тыс.</td><td>$2.17</td><td>$1.98</td><td>$0.19</td></tr><tr><td>windows-11-25h2-1-python-2</td><td>96,5 %</td><td>4,0 млн</td><td>147 тыс.</td><td>$1.72</td><td>$1.50</td><td>$0.22</td></tr><tr><td>System32</td><td>97,3 %</td><td>2,4 млн</td><td>66 тыс.</td><td>$0.87</td><td>$0.77</td><td>$0.10</td></tr><tr><td>Антон</td><td>94,1 %</td><td>1,7 млн</td><td>109 тыс.</td><td>$0.84</td><td>$0.67</td><td>$0.16</td></tr><tr><td>paper-plane</td><td>95,8 %</td><td>819 тыс.</td><td>36 тыс.</td><td>$0.51</td><td>$0.46</td><td>$0.05</td></tr><tr><td>MSearch1340</td><td>94,3 %</td><td>541 тыс.</td><td>32 тыс.</td><td>$0.42</td><td>$0.38</td><td>$0.05</td></tr><tr><td>scratch-2026-09-01-7395d5</td><td>96,9 %</td><td>716 тыс.</td><td>23 тыс.</td><td>$0.29</td><td>$0.26</td><td>$0.03</td></tr></tbody></table></div>
+  <div class="tablewrap" hidden><table><thead><tr><th>Проект</th><th>Доля чтения</th><th>Чтение кэша</th><th>Запись кэша</th><th>Стоимость (кэш 1ч)</th><th>Было бы при 5 мин</th><th>Разница</th></tr></thead><tbody><tr><td>PolitCompass</td><td>98,7 %</td><td>193,8 млн</td><td>2,5 млн</td><td>$104.82</td><td>$98.57</td><td>$6.25</td></tr><tr><td>RusSubjectMap</td><td>98,3 %</td><td>178,9 млн</td><td>3,2 млн</td><td>$52.00</td><td>$47.35</td><td>$4.65</td></tr><tr><td>Apple Editor</td><td>97,3 %</td><td>58,8 млн</td><td>1,6 млн</td><td>$31.70</td><td>$28.26</td><td>$3.44</td></tr><tr><td>ClaudeCUsD</td><td>99,0 %</td><td>31,5 млн</td><td>331 тыс.</td><td>$22.14</td><td>$20.97</td><td>$1.17</td></tr><tr><td>Attention Timeline</td><td>98,3 %</td><td>9,0 млн</td><td>160 тыс.</td><td>$3.43</td><td>$3.19</td><td>$0.24</td></tr><tr><td>Claude Code</td><td>96,8 %</td><td>8,8 млн</td><td>289 тыс.</td><td>$3.24</td><td>$2.81</td><td>$0.43</td></tr><tr><td>AnalogovNet</td><td>98,0 %</td><td>6,2 млн</td><td>127 тыс.</td><td>$2.17</td><td>$1.98</td><td>$0.19</td></tr><tr><td>windows-11-25h2-1-python-2</td><td>96,5 %</td><td>4,0 млн</td><td>147 тыс.</td><td>$1.72</td><td>$1.50</td><td>$0.22</td></tr><tr><td>System32</td><td>97,3 %</td><td>2,4 млн</td><td>66 тыс.</td><td>$0.87</td><td>$0.77</td><td>$0.10</td></tr><tr><td>Антон</td><td>94,1 %</td><td>1,7 млн</td><td>109 тыс.</td><td>$0.84</td><td>$0.67</td><td>$0.16</td></tr><tr><td>paper-plane</td><td>95,8 %</td><td>819 тыс.</td><td>36 тыс.</td><td>$0.51</td><td>$0.46</td><td>$0.05</td></tr><tr><td>MSearch1340</td><td>94,3 %</td><td>541 тыс.</td><td>32 тыс.</td><td>$0.42</td><td>$0.38</td><td>$0.05</td></tr><tr><td>scratch-2026-09-01-7395d5</td><td>96,9 %</td><td>716 тыс.</td><td>23 тыс.</td><td>$0.29</td><td>$0.26</td><td>$0.03</td></tr></tbody></table></div>
 </section>
 <section id="effort">
   <div class="head"><h2>Effort и thinking</h2><div class="spacer"></div><button class="ghost" data-toggle>Показать таблицей</button></div>
-  <p class="cap">Thinking-токены — <b>39,4 %</b> всего output (663 тыс. из 1,7 млн). Уровень effort задаёт, насколько глубоко модель рассуждает, и напрямую бьёт по этой доле.</p>
+  <p class="cap">Thinking-токены — <b>39,3 %</b> всего output (665 тыс. из 1,7 млн). Уровень effort задаёт, насколько глубоко модель рассуждает, и напрямую бьёт по этой доле.</p>
   <div class="card panel chartbox"><div id="chart-effort"></div></div>
-  <div class="tablewrap" hidden><table><thead><tr><th>Effort</th><th>Вызовов</th><th>Output</th><th>Thinking</th><th>Доля thinking</th><th>Стоимость</th></tr></thead><tbody><tr><td>low</td><td>78</td><td>32 тыс.</td><td>11 тыс.</td><td>33,2 %</td><td>$4.21</td></tr><tr><td>medium</td><td>1 586</td><td>1,0 млн</td><td>332 тыс.</td><td>32,4 %</td><td>$159.84</td></tr><tr><td>high</td><td>897</td><td>627 тыс.</td><td>321 тыс.</td><td>51,1 %</td><td>$58.03</td></tr><tr><td>xhigh</td><td>1</td><td>81</td><td>0</td><td>0,0 %</td><td>$1.94</td></tr></tbody></table></div>
+  <div class="tablewrap" hidden><table><thead><tr><th>Effort</th><th>Вызовов</th><th>Output</th><th>Thinking</th><th>Доля thinking</th><th>Стоимость</th></tr></thead><tbody><tr><td>low</td><td>78</td><td>32 тыс.</td><td>11 тыс.</td><td>33,2 %</td><td>$4.21</td></tr><tr><td>medium</td><td>1 599</td><td>1,0 млн</td><td>334 тыс.</td><td>32,4 %</td><td>$160.20</td></tr><tr><td>high</td><td>897</td><td>627 тыс.</td><td>321 тыс.</td><td>51,1 %</td><td>$58.03</td></tr><tr><td>xhigh</td><td>1</td><td>81</td><td>0</td><td>0,0 %</td><td>$1.94</td></tr></tbody></table></div>
 </section>
 <section id="sessions">
   <div class="head"><h2>Топ-10 самых дорогих сессий</h2><div class="spacer"></div></div>
@@ -290,7 +441,7 @@ code { font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
 <section id="misc">
   <div class="head"><h2>Сабагенты и ветки</h2><div class="spacer"></div></div>
   <p class="cap">Два разреза, которые пока почти ничего не показывают, но станут осмысленными, если вы начнёте активнее пользоваться сабагентами или вести работу в ветках.</p>
-  <div class="card panel"><div class="tablewrap"><table><thead><tr><th>Поток</th><th>Вызовов</th><th>Output</th><th>Стоимость</th><th>Доля</th></tr></thead><tbody><tr><td>основной поток</td><td>2 495</td><td>1,6 млн</td><td>$221.69</td><td>99,0 %</td></tr><tr><td>сабагенты</td><td>67</td><td>40 тыс.</td><td>$2.33</td><td>1,0 %</td></tr></tbody></table></div><div style="height:22px"></div><div class="tablewrap"><table><thead><tr><th>Git-ветка</th><th>Вызовов</th><th>Стоимость</th><th>Доля</th></tr></thead><tbody><tr><td>HEAD</td><td>1 543</td><td>$128.29</td><td>57,3 %</td></tr><tr><td>main</td><td>1 019</td><td>$95.73</td><td>42,7 %</td></tr></tbody></table></div></div>
+  <div class="card panel"><div class="tablewrap"><table><thead><tr><th>Поток</th><th>Вызовов</th><th>Output</th><th>Стоимость</th><th>Доля</th></tr></thead><tbody><tr><td>основной поток</td><td>2 508</td><td>1,6 млн</td><td>$222.05</td><td>99,0 %</td></tr><tr><td>сабагенты</td><td>67</td><td>40 тыс.</td><td>$2.33</td><td>1,0 %</td></tr></tbody></table></div><div style="height:22px"></div><div class="tablewrap"><table><thead><tr><th>Git-ветка</th><th>Вызовов</th><th>Стоимость</th><th>Доля</th></tr></thead><tbody><tr><td>HEAD</td><td>1 556</td><td>$128.65</td><td>57,3 %</td></tr><tr><td>main</td><td>1 019</td><td>$95.73</td><td>42,7 %</td></tr></tbody></table></div></div>
   
 </section>
 
@@ -298,13 +449,13 @@ code { font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
   <h3>Как это посчитано</h3>
   <p>Данные берутся из транскриптов сессий в
     <code>C:\Users\Антон\.claude\projects</code>: прочитано
-    49 файлов и 16 тыс.
-    строк. Из 5 058 записей с данными об
-    использовании <b>2 496
+    52 файлов и 16 тыс.
+    строк. Из 5 081 записей с данными об
+    использовании <b>2 506
     (49.3&nbsp;%) — дубликаты</b>: один и тот же вызов переписывается
     в транскрипт при resume, rewind и в файлы сабагентов. Дедуп идёт по паре
     <code>message.id + requestId</code>, осталось
-    2 562 уникальных вызовов. Ещё
+    2 575 уникальных вызовов. Ещё
     12 записей оказались
     оборванными снимками стрима — вместо них взяты полные.</p>
   <p>Итоги сходятся с независимой утилитой <code>ccusage</code> до цента по
@@ -334,7 +485,7 @@ code { font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
 
 </div>
 <div id="tip" role="tooltip"></div>
-<script>window.__CCDASH__ = {"meta":{"built_at":"2026-09-07T19:10:43+03:00","source_dir":"C:\\Users\\Антон\\.claude\\projects","files_scanned":"49","lines_read":"16341","usage_rows_raw":"5058","duplicates_dropped":"2496","partial_records_replaced":"12","rows_kept":"2562","bad_json_lines":"0","rows_no_timestamp":"0","rows_no_model":"0","rows_no_cwd":"0","rows_no_dedup_key":"0","unknown_models":"{}","unknown_usage_keys":"{}","read_errors":"[]","extracted_fields":"message.id, requestId, sessionId, timestamp, cwd, gitBranch, version, effort, isSidechain, message.model, message.usage.*","local_timezone":"Беларусь (зима)","rebuild_command":"python collect.py"},"totals":{"calls":2562,"projects":14,"sessions":37,"first":"2026-09-01","last":"2026-09-07","input":5124,"output":1683583,"thinking":663062,"cache_read":496576146,"cache_write":8551891,"cost":224.0244959,"cost5m":207.05179415,"days":7,"parts":{"input":0.01566,"output":27.49936,"cache_write":45.9845605,"cache_read":150.5249154}},"days":[{"date":"2026-09-01","weekday":"вт","calls":785,"input":1570,"output":449610,"thinking":211512,"cache_write":3769230,"cache_read":198118026,"cost":58.7709932,"sessions":8,"parts":{"input":0.00314,"output":4.4961,"cache_write":14.648148,"cache_read":39.6236052}},{"date":"2026-09-02","weekday":"ср","calls":352,"input":704,"output":252366,"thinking":115432,"cache_write":1583147,"cache_read":57734979,"cost":31.879818,"sessions":9,"parts":{"input":0.002188,"output":4.353975,"cache_write":9.9026705,"cache_read":17.6209845}},{"date":"2026-09-03","weekday":"чт","calls":66,"input":132,"output":99667,"thinking":55470,"cache_write":159751,"cache_read":8989104,"cost":3.4337588,"sessions":1,"parts":{"input":0.000264,"output":0.99667,"cache_write":0.639004,"cache_read":1.7978208}},{"date":"2026-09-04","weekday":"пт","calls":6,"input":12,"output":8091,"thinking":5953,"cache_write":22208,"cache_read":291520,"cost":0.22807,"sessions":1,"parts":{"input":2.4e-05,"output":0.08091,"cache_write":0.088832,"cache_read":0.058304}},{"date":"2026-09-05","weekday":"сб","calls":23,"input":46,"output":38905,"thinking":21822,"cache_write":68682,"cache_read":1359633,"cost":0.9357966000000001,"sessions":2,"parts":{"input":9.2e-05,"output":0.38905,"cache_write":0.274728,"cache_read":0.2719266}},{"date":"2026-09-06","weekday":"вс","calls":724,"input":1448,"output":479734,"thinking":141288,"cache_write":1658660,"cache_read":114581932,"cost":65.8206504,"sessions":12,"parts":{"input":0.005116,"output":9.563335,"cache_write":11.035333999999999,"cache_read":45.2168654}},{"date":"2026-09-07","weekday":"пн","calls":606,"input":1212,"output":355210,"thinking":111585,"cache_write":1290213,"cache_read":115500952,"cost":62.9554089,"sessions":6,"parts":{"input":0.004836,"output":7.61932,"cache_write":9.395844,"cache_read":45.9354089}}],"projects":[{"name":"PolitCompass","path":"E:\\PolitCompass","sessions":13,"calls":1107,"input":2214,"output":669238,"thinking":221897,"cache_write":2454914,"cache_read":193802011,"cost":104.8181861,"cost5m":98.5687316,"first":"2026-09-06","last":"2026-09-07"},{"name":"RusSubjectMap","path":"C:\\Users\\Антон\\Documents\\RusSubjectMap","sessions":5,"calls":568,"input":1136,"output":362176,"thinking":184818,"cache_write":3178351,"cache_read":178904551,"cost":51.9991007,"cost5m":47.3508197,"first":"2026-09-01","last":"2026-09-06"},{"name":"Apple Editor","path":"C:\\Users\\Антон\\Documents\\Apple Editor","sessions":2,"calls":349,"input":698,"output":234450,"thinking":106007,"cache_write":1607728,"cache_read":58767113,"cost":31.6958703,"cost5m":28.2585498,"first":"2026-09-01","last":"2026-09-02"},{"name":"ClaudeCUsD","path":"E:\\ClaudeCUsD","sessions":1,"calls":140,"input":280,"output":139256,"thinking":25261,"cache_write":298355,"cache_read":30627002,"cost":21.779851,"cost5m":20.66101975,"first":"2026-09-07","last":"2026-09-07"},{"name":"Attention Timeline","path":"E:\\Attention Timeline","sessions":1,"calls":66,"input":132,"output":99667,"thinking":55470,"cache_write":159751,"cache_read":8989104,"cost":3.4337588,"cost5m":3.1941323,"first":"2026-09-03","last":"2026-09-03"},{"name":"Claude Code","path":"C:\\Users\\Антон\\Сравнение ИИ\\Claude Code","sessions":1,"calls":102,"input":204,"output":33249,"thinking":11048,"cache_write":289470,"cache_read":8766517,"cost":3.2440814000000002,"cost5m":2.8098764,"first":"2026-09-01","last":"2026-09-01"},{"name":"AnalogovNet","path":"C:\\Users\\Антон\\Documents\\AnalogovNet","sessions":3,"calls":75,"input":150,"output":43198,"thinking":14955,"cache_write":126812,"cache_read":6173721,"cost":2.1742722,"cost5m":1.9840542,"first":"2026-09-02","last":"2026-09-02"},{"name":"windows-11-25h2-1-python-2","path":"C:\\Users\\Антон\\Documents\\Codex\\2026-06-14\\windows-11-25h2-1-python-2","sessions":1,"calls":45,"input":90,"output":32498,"thinking":10775,"cache_write":147338,"cache_read":4030798,"cost":1.7206716,"cost5m":1.4996646,"first":"2026-09-01","last":"2026-09-02"},{"name":"System32","path":"C:\\Windows\\System32","sessions":3,"calls":37,"input":74,"output":12190,"thinking":2085,"cache_write":66386,"cache_read":2408331,"cost":0.8692582,"cost5m":0.7696792,"first":"2026-09-02","last":"2026-09-06"},{"name":"Антон","path":"C:\\Users\\Антон","sessions":3,"calls":32,"input":64,"output":5281,"thinking":404,"cache_write":108699,"cache_read":1739705,"cost":0.8356750000000001,"cost5m":0.6726265,"first":"2026-09-01","last":"2026-09-07"},{"name":"paper-plane","path":"C:\\Users\\Антон\\Documents\\paper-plane","sessions":1,"calls":13,"input":26,"output":20294,"thinking":13370,"cache_write":36250,"cache_read":818975,"cost":0.511787,"cost5m":0.457412,"first":"2026-09-05","last":"2026-09-05"},{"name":"MSearch1340","path":"E:\\MSearch1340","sessions":1,"calls":10,"input":20,"output":18611,"thinking":8452,"cache_write":32432,"cache_read":540658,"cost":0.4240096,"cost5m":0.3753616,"first":"2026-09-05","last":"2026-09-05"},{"name":"scratch-2026-09-01-7395d5","path":"C:\\Users\\Антон\\AppData\\Roaming\\Claude\\scratch-workspaces\\738a6674-6149-4f0d-bebc-2e0edfc794d8\\362c100c-d3a5-4bd0-818f-5b01bf526e38\\scratch-2026-09-01-7395d5","sessions":1,"calls":12,"input":24,"output":5384,"thinking":2567,"cache_write":23197,"cache_read":716140,"cost":0.289904,"cost5m":0.2551085,"first":"2026-09-01","last":"2026-09-01"},{"name":"Qr-Code and barcode generator","path":"C:\\Users\\Антон\\Documents\\Qr-Code and barcode generator","sessions":1,"calls":6,"input":12,"output":8091,"thinking":5953,"cache_write":22208,"cache_read":291520,"cost":0.22807,"cost5m":0.19475800000000001,"first":"2026-09-04","last":"2026-09-04"}],"models":[{"model":"claude-opus-5","calls":902,"input":1804,"output":710902,"thinking":193195,"cache_write":2035235,"cache_read":170698954,"cost":123.483397,"sessions":9},{"model":"claude-sonnet-5","calls":1660,"input":3320,"output":972681,"thinking":469867,"cache_write":6516656,"cache_read":325877192,"cost":100.54109890000001,"sessions":33}],"cross":[{"project":"AnalogovNet","model":"claude-sonnet-5","calls":75,"cost":2.1742722},{"project":"Apple Editor","model":"claude-opus-5","calls":130,"cost":19.1346795},{"project":"Apple Editor","model":"claude-sonnet-5","calls":219,"cost":12.5611908},{"project":"Attention Timeline","model":"claude-sonnet-5","calls":66,"cost":3.4337588},{"project":"Claude Code","model":"claude-sonnet-5","calls":102,"cost":3.2440814000000002},{"project":"ClaudeCUsD","model":"claude-opus-5","calls":140,"cost":21.779851},{"project":"MSearch1340","model":"claude-sonnet-5","calls":10,"cost":0.4240096},{"project":"PolitCompass","model":"claude-opus-5","calls":632,"cost":82.5688665},{"project":"PolitCompass","model":"claude-sonnet-5","calls":475,"cost":22.2493196},{"project":"Qr-Code and barcode generator","model":"claude-sonnet-5","calls":6,"cost":0.22807},{"project":"RusSubjectMap","model":"claude-sonnet-5","calls":568,"cost":51.9991007},{"project":"System32","model":"claude-sonnet-5","calls":37,"cost":0.8692582},{"project":"paper-plane","model":"claude-sonnet-5","calls":13,"cost":0.511787},{"project":"scratch-2026-09-01-7395d5","model":"claude-sonnet-5","calls":12,"cost":0.289904},{"project":"windows-11-25h2-1-python-2","model":"claude-sonnet-5","calls":45,"cost":1.7206716},{"project":"Антон","model":"claude-sonnet-5","calls":32,"cost":0.8356750000000001}],"hours":[{"hour":0,"calls":0,"cost":0.0,"output":0},{"hour":1,"calls":0,"cost":0.0,"output":0},{"hour":2,"calls":0,"cost":0.0,"output":0},{"hour":3,"calls":0,"cost":0.0,"output":0},{"hour":4,"calls":0,"cost":0.0,"output":0},{"hour":5,"calls":0,"cost":0.0,"output":0},{"hour":6,"calls":12,"cost":0.603602,"output":22077},{"hour":7,"calls":443,"cost":33.1348853,"output":313385},{"hour":8,"calls":99,"cost":9.710254800000001,"output":52877},{"hour":9,"calls":0,"cost":0.0,"output":0},{"hour":10,"calls":3,"cost":0.287474,"output":12086},{"hour":11,"calls":0,"cost":0.0,"output":0},{"hour":12,"calls":0,"cost":0.0,"output":0},{"hour":13,"calls":49,"cost":6.4906455,"output":85462},{"hour":14,"calls":143,"cost":20.1637583,"output":55363},{"hour":15,"calls":145,"cost":5.5044675000000005,"output":66030},{"hour":16,"calls":486,"cost":39.460995,"output":246825},{"hour":17,"calls":251,"cost":20.8693721,"output":238876},{"hour":18,"calls":269,"cost":25.6574877,"output":215092},{"hour":19,"calls":210,"cost":16.7047768,"output":117581},{"hour":20,"calls":53,"cost":2.3277948,"output":24925},{"hour":21,"calls":204,"cost":9.7048571,"output":114278},{"hour":22,"calls":183,"cost":30.8542945,"output":113394},{"hour":23,"calls":12,"cost":2.5498305,"output":5332}],"efforts":[{"effort":"medium","calls":1586,"output":1024414,"thinking":331806,"cost":159.8408085},{"effort":"high","calls":897,"output":626738,"thinking":320501,"cost":58.0295885},{"effort":"low","calls":78,"output":32350,"thinking":10755,"cost":4.2109475000000005},{"effort":"xhigh","calls":1,"output":81,"thinking":0,"cost":1.9431514}],"sessions":[{"id":"4bea78f5-1dba-4163-a0db-2d79dc65414e","project":"PolitCompass","calls":222,"started":"2026-09-06T18:52:03+00:00","ended":"2026-09-06T20:02:50+00:00","models":"claude-opus-5","output":169913,"thinking":38248,"cache_read":58700927,"cache_write":362766,"cost":37.2281685},{"id":"c0c71814-6ade-4c39-9e8a-431ef19d7007","project":"RusSubjectMap","calls":401,"started":"2026-09-01T04:03:42+00:00","ended":"2026-09-01T05:18:53+00:00","models":"claude-sonnet-5","output":268310,"thinking":145800,"cache_read":124042727,"cache_write":445686,"cost":29.2759934},{"id":"bd98a687-af2c-4dd4-af2e-17fa752debfd","project":"PolitCompass","calls":205,"started":"2026-09-07T13:15:01+00:00","ended":"2026-09-07T13:47:49+00:00","models":"claude-opus-5,claude-sonnet-5","output":82200,"thinking":24884,"cache_read":46137213,"cache_write":493044,"cost":22.5686143},{"id":"24272620-3b00-4962-accd-3acc683b7aba","project":"ClaudeCUsD","calls":140,"started":"2026-09-07T15:12:03+00:00","ended":"2026-09-07T16:08:56+00:00","models":"claude-opus-5","output":139256,"thinking":25261,"cache_read":30627002,"cache_write":298355,"cost":21.779851},{"id":"f53597ef-ca96-4d0e-b714-428bd9c5c951","project":"RusSubjectMap","calls":102,"started":"2026-09-01T11:29:40+00:00","ended":"2026-09-01T16:11:40+00:00","models":"claude-sonnet-5","output":23738,"thinking":7069,"cache_read":50609694,"cache_write":2458233,"cost":20.1926588},{"id":"e464f310-dd2c-4448-b382-33e37b685596","project":"Apple Editor","calls":200,"started":"2026-09-02T14:12:23+00:00","ended":"2026-09-02T15:16:30+00:00","models":"claude-opus-5,claude-sonnet-5","output":158336,"thinking":78874,"cache_read":42451425,"cache_write":631245,"cost":19.7743894},{"id":"221b3f60-4a64-4a60-9385-f108dbe4fa16","project":"PolitCompass","calls":127,"started":"2026-09-07T04:26:36+00:00","ended":"2026-09-07T04:43:50+00:00","models":"claude-opus-5","output":64903,"thinking":16799,"cache_read":18447744,"cache_write":169521,"cost":12.542927},{"id":"4dcc69ac-6698-4591-8e53-3db90f07eb32","project":"Apple Editor","calls":149,"started":"2026-09-01T11:59:55+00:00","ended":"2026-09-02T14:05:39+00:00","models":"claude-sonnet-5,claude-opus-5","output":76114,"thinking":27133,"cache_read":16315688,"cache_write":976483,"cost":11.9214809},{"id":"a7ccf91e-6570-4ba6-b7ed-b5deb678c24a","project":"PolitCompass","calls":81,"started":"2026-09-06T16:02:13+00:00","ended":"2026-09-06T16:18:44+00:00","models":"claude-opus-5","output":56496,"thinking":17890,"cache_read":9348327,"cache_write":129796,"cost":7.3853335},{"id":"5fdc3b9e-472e-43da-b5ed-d2af568c600f","project":"PolitCompass","calls":72,"started":"2026-09-06T10:52:12+00:00","ended":"2026-09-06T11:36:08+00:00","models":"claude-opus-5,claude-sonnet-5","output":48418,"thinking":15114,"cache_read":7515900,"cache_write":270946,"cost":6.2330453}],"branches":[{"branch":"HEAD","calls":1543,"cost":128.2929516},{"branch":"main","calls":1019,"cost":95.7315443}],"subagents":[{"kind":"основной поток","calls":2495,"output":1643707,"cost":221.6943392},{"kind":"сабагенты","calls":67,"output":39876,"cost":2.3301567000000003}]};</script>
+<script>window.__CCDASH__ = {"meta":{"built_at":"2026-09-07T20:52:46+03:00","source_dir":"C:\\Users\\Антон\\.claude\\projects","files_scanned":"52","lines_read":"16441","usage_rows_raw":"5081","duplicates_dropped":"2506","partial_records_replaced":"12","rows_kept":"2575","bad_json_lines":"0","rows_no_timestamp":"0","rows_no_model":"0","rows_no_cwd":"0","rows_no_dedup_key":"0","unknown_models":"{}","unknown_usage_keys":"{}","read_errors":"[]","extracted_fields":"message.id, requestId, sessionId, timestamp, cwd, gitBranch, version, effort, isSidechain, message.model, message.usage.*","local_timezone":"Беларусь (зима)","rebuild_command":"python collect.py"},"totals":{"calls":2575,"projects":14,"sessions":38,"first":"2026-09-01","last":"2026-09-07","input":5150,"output":1689382,"thinking":664763,"cache_read":497410816,"cache_write":8584912,"cost":224.3815559,"cost5m":207.35932265,"days":7,"parts":{"input":0.015712,"output":27.55735,"cache_write":46.1166445,"cache_read":150.6918494}},"days":[{"date":"2026-09-01","weekday":"вт","calls":785,"input":1570,"output":449610,"thinking":211512,"cache_write":3769230,"cache_read":198118026,"cost":58.7709932,"sessions":8,"parts":{"input":0.00314,"output":4.4961,"cache_write":14.648148,"cache_read":39.6236052}},{"date":"2026-09-02","weekday":"ср","calls":352,"input":704,"output":252366,"thinking":115432,"cache_write":1583147,"cache_read":57734979,"cost":31.879818,"sessions":9,"parts":{"input":0.002188,"output":4.353975,"cache_write":9.9026705,"cache_read":17.6209845}},{"date":"2026-09-03","weekday":"чт","calls":66,"input":132,"output":99667,"thinking":55470,"cache_write":159751,"cache_read":8989104,"cost":3.4337588,"sessions":1,"parts":{"input":0.000264,"output":0.99667,"cache_write":0.639004,"cache_read":1.7978208}},{"date":"2026-09-04","weekday":"пт","calls":6,"input":12,"output":8091,"thinking":5953,"cache_write":22208,"cache_read":291520,"cost":0.22807,"sessions":1,"parts":{"input":2.4e-05,"output":0.08091,"cache_write":0.088832,"cache_read":0.058304}},{"date":"2026-09-05","weekday":"сб","calls":23,"input":46,"output":38905,"thinking":21822,"cache_write":68682,"cache_read":1359633,"cost":0.9357966000000001,"sessions":2,"parts":{"input":9.2e-05,"output":0.38905,"cache_write":0.274728,"cache_read":0.2719266}},{"date":"2026-09-06","weekday":"вс","calls":724,"input":1448,"output":479734,"thinking":141288,"cache_write":1658660,"cache_read":114581932,"cost":65.8206504,"sessions":12,"parts":{"input":0.005116,"output":9.563335,"cache_write":11.035333999999999,"cache_read":45.2168654}},{"date":"2026-09-07","weekday":"пн","calls":619,"input":1238,"output":361009,"thinking":113286,"cache_write":1323234,"cache_read":116335622,"cost":63.3124689,"sessions":7,"parts":{"input":0.004888,"output":7.677309999999999,"cache_write":9.527928,"cache_read":46.102342900000004}}],"projects":[{"name":"PolitCompass","path":"E:\\PolitCompass","sessions":13,"calls":1107,"input":2214,"output":669238,"thinking":221897,"cache_write":2454914,"cache_read":193802011,"cost":104.8181861,"cost5m":98.5687316,"first":"2026-09-06","last":"2026-09-07"},{"name":"RusSubjectMap","path":"C:\\Users\\Антон\\Documents\\RusSubjectMap","sessions":5,"calls":568,"input":1136,"output":362176,"thinking":184818,"cache_write":3178351,"cache_read":178904551,"cost":51.9991007,"cost5m":47.3508197,"first":"2026-09-01","last":"2026-09-06"},{"name":"Apple Editor","path":"C:\\Users\\Антон\\Documents\\Apple Editor","sessions":2,"calls":349,"input":698,"output":234450,"thinking":106007,"cache_write":1607728,"cache_read":58767113,"cost":31.6958703,"cost5m":28.2585498,"first":"2026-09-01","last":"2026-09-02"},{"name":"ClaudeCUsD","path":"E:\\ClaudeCUsD","sessions":2,"calls":153,"input":306,"output":145055,"thinking":26962,"cache_write":331376,"cache_read":31461672,"cost":22.136911,"cost5m":20.96854825,"first":"2026-09-07","last":"2026-09-07"},{"name":"Attention Timeline","path":"E:\\Attention Timeline","sessions":1,"calls":66,"input":132,"output":99667,"thinking":55470,"cache_write":159751,"cache_read":8989104,"cost":3.4337588,"cost5m":3.1941323,"first":"2026-09-03","last":"2026-09-03"},{"name":"Claude Code","path":"C:\\Users\\Антон\\Сравнение ИИ\\Claude Code","sessions":1,"calls":102,"input":204,"output":33249,"thinking":11048,"cache_write":289470,"cache_read":8766517,"cost":3.2440814000000002,"cost5m":2.8098764,"first":"2026-09-01","last":"2026-09-01"},{"name":"AnalogovNet","path":"C:\\Users\\Антон\\Documents\\AnalogovNet","sessions":3,"calls":75,"input":150,"output":43198,"thinking":14955,"cache_write":126812,"cache_read":6173721,"cost":2.1742722,"cost5m":1.9840542,"first":"2026-09-02","last":"2026-09-02"},{"name":"windows-11-25h2-1-python-2","path":"C:\\Users\\Антон\\Documents\\Codex\\2026-06-14\\windows-11-25h2-1-python-2","sessions":1,"calls":45,"input":90,"output":32498,"thinking":10775,"cache_write":147338,"cache_read":4030798,"cost":1.7206716,"cost5m":1.4996646,"first":"2026-09-01","last":"2026-09-02"},{"name":"System32","path":"C:\\Windows\\System32","sessions":3,"calls":37,"input":74,"output":12190,"thinking":2085,"cache_write":66386,"cache_read":2408331,"cost":0.8692582,"cost5m":0.7696792,"first":"2026-09-02","last":"2026-09-06"},{"name":"Антон","path":"C:\\Users\\Антон","sessions":3,"calls":32,"input":64,"output":5281,"thinking":404,"cache_write":108699,"cache_read":1739705,"cost":0.8356750000000001,"cost5m":0.6726265,"first":"2026-09-01","last":"2026-09-07"},{"name":"paper-plane","path":"C:\\Users\\Антон\\Documents\\paper-plane","sessions":1,"calls":13,"input":26,"output":20294,"thinking":13370,"cache_write":36250,"cache_read":818975,"cost":0.511787,"cost5m":0.457412,"first":"2026-09-05","last":"2026-09-05"},{"name":"MSearch1340","path":"E:\\MSearch1340","sessions":1,"calls":10,"input":20,"output":18611,"thinking":8452,"cache_write":32432,"cache_read":540658,"cost":0.4240096,"cost5m":0.3753616,"first":"2026-09-05","last":"2026-09-05"},{"name":"scratch-2026-09-01-7395d5","path":"C:\\Users\\Антон\\AppData\\Roaming\\Claude\\scratch-workspaces\\738a6674-6149-4f0d-bebc-2e0edfc794d8\\362c100c-d3a5-4bd0-818f-5b01bf526e38\\scratch-2026-09-01-7395d5","sessions":1,"calls":12,"input":24,"output":5384,"thinking":2567,"cache_write":23197,"cache_read":716140,"cost":0.289904,"cost5m":0.2551085,"first":"2026-09-01","last":"2026-09-01"},{"name":"Qr-Code and barcode generator","path":"C:\\Users\\Антон\\Documents\\Qr-Code and barcode generator","sessions":1,"calls":6,"input":12,"output":8091,"thinking":5953,"cache_write":22208,"cache_read":291520,"cost":0.22807,"cost5m":0.19475800000000001,"first":"2026-09-04","last":"2026-09-04"}],"models":[{"model":"claude-opus-5","calls":902,"input":1804,"output":710902,"thinking":193195,"cache_write":2035235,"cache_read":170698954,"cost":123.483397,"sessions":9},{"model":"claude-sonnet-5","calls":1673,"input":3346,"output":978480,"thinking":471568,"cache_write":6549677,"cache_read":326711862,"cost":100.8981589,"sessions":34}],"cross":[{"project":"AnalogovNet","model":"claude-sonnet-5","calls":75,"cost":2.1742722},{"project":"Apple Editor","model":"claude-opus-5","calls":130,"cost":19.1346795},{"project":"Apple Editor","model":"claude-sonnet-5","calls":219,"cost":12.5611908},{"project":"Attention Timeline","model":"claude-sonnet-5","calls":66,"cost":3.4337588},{"project":"Claude Code","model":"claude-sonnet-5","calls":102,"cost":3.2440814000000002},{"project":"ClaudeCUsD","model":"claude-opus-5","calls":140,"cost":21.779851},{"project":"ClaudeCUsD","model":"claude-sonnet-5","calls":13,"cost":0.35706},{"project":"MSearch1340","model":"claude-sonnet-5","calls":10,"cost":0.4240096},{"project":"PolitCompass","model":"claude-opus-5","calls":632,"cost":82.5688665},{"project":"PolitCompass","model":"claude-sonnet-5","calls":475,"cost":22.2493196},{"project":"Qr-Code and barcode generator","model":"claude-sonnet-5","calls":6,"cost":0.22807},{"project":"RusSubjectMap","model":"claude-sonnet-5","calls":568,"cost":51.9991007},{"project":"System32","model":"claude-sonnet-5","calls":37,"cost":0.8692582},{"project":"paper-plane","model":"claude-sonnet-5","calls":13,"cost":0.511787},{"project":"scratch-2026-09-01-7395d5","model":"claude-sonnet-5","calls":12,"cost":0.289904},{"project":"windows-11-25h2-1-python-2","model":"claude-sonnet-5","calls":45,"cost":1.7206716},{"project":"Антон","model":"claude-sonnet-5","calls":32,"cost":0.8356750000000001}],"hours":[{"hour":0,"calls":0,"cost":0.0,"output":0},{"hour":1,"calls":0,"cost":0.0,"output":0},{"hour":2,"calls":0,"cost":0.0,"output":0},{"hour":3,"calls":0,"cost":0.0,"output":0},{"hour":4,"calls":0,"cost":0.0,"output":0},{"hour":5,"calls":0,"cost":0.0,"output":0},{"hour":6,"calls":12,"cost":0.603602,"output":22077},{"hour":7,"calls":443,"cost":33.1348853,"output":313385},{"hour":8,"calls":99,"cost":9.710254800000001,"output":52877},{"hour":9,"calls":0,"cost":0.0,"output":0},{"hour":10,"calls":3,"cost":0.287474,"output":12086},{"hour":11,"calls":0,"cost":0.0,"output":0},{"hour":12,"calls":0,"cost":0.0,"output":0},{"hour":13,"calls":49,"cost":6.4906455,"output":85462},{"hour":14,"calls":143,"cost":20.1637583,"output":55363},{"hour":15,"calls":145,"cost":5.5044675000000005,"output":66030},{"hour":16,"calls":486,"cost":39.460995,"output":246825},{"hour":17,"calls":251,"cost":20.8693721,"output":238876},{"hour":18,"calls":269,"cost":25.6574877,"output":215092},{"hour":19,"calls":210,"cost":16.7047768,"output":117581},{"hour":20,"calls":66,"cost":2.6848548,"output":30724},{"hour":21,"calls":204,"cost":9.7048571,"output":114278},{"hour":22,"calls":183,"cost":30.8542945,"output":113394},{"hour":23,"calls":12,"cost":2.5498305,"output":5332}],"efforts":[{"effort":"medium","calls":1599,"output":1030213,"thinking":333507,"cost":160.1978685},{"effort":"high","calls":897,"output":626738,"thinking":320501,"cost":58.0295885},{"effort":"low","calls":78,"output":32350,"thinking":10755,"cost":4.2109475000000005},{"effort":"xhigh","calls":1,"output":81,"thinking":0,"cost":1.9431514}],"sessions":[{"id":"4bea78f5-1dba-4163-a0db-2d79dc65414e","project":"PolitCompass","calls":222,"started":"2026-09-06T18:52:03+00:00","ended":"2026-09-06T20:02:50+00:00","models":"claude-opus-5","output":169913,"thinking":38248,"cache_read":58700927,"cache_write":362766,"cost":37.2281685},{"id":"c0c71814-6ade-4c39-9e8a-431ef19d7007","project":"RusSubjectMap","calls":401,"started":"2026-09-01T04:03:42+00:00","ended":"2026-09-01T05:18:53+00:00","models":"claude-sonnet-5","output":268310,"thinking":145800,"cache_read":124042727,"cache_write":445686,"cost":29.2759934},{"id":"bd98a687-af2c-4dd4-af2e-17fa752debfd","project":"PolitCompass","calls":205,"started":"2026-09-07T13:15:01+00:00","ended":"2026-09-07T13:47:49+00:00","models":"claude-opus-5,claude-sonnet-5","output":82200,"thinking":24884,"cache_read":46137213,"cache_write":493044,"cost":22.5686143},{"id":"24272620-3b00-4962-accd-3acc683b7aba","project":"ClaudeCUsD","calls":140,"started":"2026-09-07T15:12:03+00:00","ended":"2026-09-07T16:08:56+00:00","models":"claude-opus-5","output":139256,"thinking":25261,"cache_read":30627002,"cache_write":298355,"cost":21.779851},{"id":"f53597ef-ca96-4d0e-b714-428bd9c5c951","project":"RusSubjectMap","calls":102,"started":"2026-09-01T11:29:40+00:00","ended":"2026-09-01T16:11:40+00:00","models":"claude-sonnet-5","output":23738,"thinking":7069,"cache_read":50609694,"cache_write":2458233,"cost":20.1926588},{"id":"e464f310-dd2c-4448-b382-33e37b685596","project":"Apple Editor","calls":200,"started":"2026-09-02T14:12:23+00:00","ended":"2026-09-02T15:16:30+00:00","models":"claude-opus-5,claude-sonnet-5","output":158336,"thinking":78874,"cache_read":42451425,"cache_write":631245,"cost":19.7743894},{"id":"221b3f60-4a64-4a60-9385-f108dbe4fa16","project":"PolitCompass","calls":127,"started":"2026-09-07T04:26:36+00:00","ended":"2026-09-07T04:43:50+00:00","models":"claude-opus-5","output":64903,"thinking":16799,"cache_read":18447744,"cache_write":169521,"cost":12.542927},{"id":"4dcc69ac-6698-4591-8e53-3db90f07eb32","project":"Apple Editor","calls":149,"started":"2026-09-01T11:59:55+00:00","ended":"2026-09-02T14:05:39+00:00","models":"claude-sonnet-5,claude-opus-5","output":76114,"thinking":27133,"cache_read":16315688,"cache_write":976483,"cost":11.9214809},{"id":"a7ccf91e-6570-4ba6-b7ed-b5deb678c24a","project":"PolitCompass","calls":81,"started":"2026-09-06T16:02:13+00:00","ended":"2026-09-06T16:18:44+00:00","models":"claude-opus-5","output":56496,"thinking":17890,"cache_read":9348327,"cache_write":129796,"cost":7.3853335},{"id":"5fdc3b9e-472e-43da-b5ed-d2af568c600f","project":"PolitCompass","calls":72,"started":"2026-09-06T10:52:12+00:00","ended":"2026-09-06T11:36:08+00:00","models":"claude-opus-5,claude-sonnet-5","output":48418,"thinking":15114,"cache_read":7515900,"cache_write":270946,"cost":6.2330453}],"branches":[{"branch":"HEAD","calls":1556,"cost":128.6500116},{"branch":"main","calls":1019,"cost":95.7315443}],"subagents":[{"kind":"основной поток","calls":2508,"output":1649506,"cost":222.0513992},{"kind":"сабагенты","calls":67,"output":39876,"cost":2.3301567000000003}]};</script>
 <script>
 const D = window.__CCDASH__;
 const $ = (s, r=document) => r.querySelector(s);
@@ -408,6 +559,20 @@ function tipPath(x, y, w, h, r) {
 
 const GAP = 2;          // разделитель цветом поверхности между сегментами
 const BAR_MAX = 24;     // марки тонкие: ни один столбик не заливает слот
+const CALM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* Счётчик: число дорастает до значения за ~1.1 с. Только для героя - на
+   каждой плитке это был бы аттракцион, а не дашборд. */
+function countUp(node, target, fmt, dur=1100) {
+  if (CALM) { node.textContent = fmt(target); return; }
+  const t0 = performance.now();
+  const step = t => {
+    const k = Math.min(1, (t - t0)/dur), e = 1 - Math.pow(1 - k, 3);
+    node.textContent = fmt(target*e);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 
 /* =========================================================== стек по дням */
 function drawDaily(host) {
@@ -446,11 +611,13 @@ function drawDaily(host) {
       if (h > 0.5) {
         el("path", {d: isTop ? capPath(x, drawTop, bw, h, 4)
                              : `M${x},${drawTop} h${bw} v${h} h${-bw} Z`,
-                    fill:`var(${s.c})`}, svg);
+                    fill:`var(${s.c})`, class:"grow-y",
+                    style:`animation-delay:${i*22}ms`}, svg);
       }
       acc += s.v;
     });
-    const lb = el("text", {class:"dlabel", x:cx, y:y(d.cost)-9, "text-anchor":"middle"}, svg);
+    const lb = el("text", {class:"dlabel fade-in", x:cx, y:y(d.cost)-9,
+                           "text-anchor":"middle"}, svg);
     lb.textContent = money0(d.cost);
     const a1 = el("text", {class:"axis-strong", x:cx, y:m.t+ih+18, "text-anchor":"middle"}, svg);
     a1.textContent = d.date.slice(8) + "." + d.date.slice(5,7);
@@ -487,9 +654,11 @@ function drawBars(host, rows, opts) {
     const nm = el("text", {class:"axis-strong", x:m.l-14, y:yb+bh/2+4,
                            "text-anchor":"end"}, svg);
     nm.textContent = label(d).length > 26 ? label(d).slice(0,25)+"…" : label(d);
-    el("path", {d: tipPath(m.l, yb, Math.max(w, 2), bh, 4),
+    el("path", {d: tipPath(m.l, yb, Math.max(w, 2), bh, 4), class:"grow-x",
+                style:`animation-delay:${i*40}ms`,
                 fill: typeof color === "function" ? color(d) : `var(${color})`}, svg);
-    const vl = el("text", {class:"dlabel", x:m.l+Math.max(w,2)+10, y:yb+bh/2+4}, svg);
+    const vl = el("text", {class:"dlabel fade-in", x:m.l+Math.max(w,2)+10,
+                           y:yb+bh/2+4}, svg);
     vl.textContent = fmt(d);
     const hit = el("rect", {class:"hit", x:0, y:y0, width:W, height:rowH}, svg);
     bindTip(hit, label(d), tipRows(d));
@@ -511,7 +680,8 @@ function drawShare(host, parts, colors) {
     else if (i === 0) d = `M${xx+4},0 h${w-4} v30 h${-(w-4)} q-4,0 -4,-4 v-22 q0,-4 4,-4 Z`;
     else if (i === parts.length-1) d = tipPath(xx, 0, w, 30, 4);
     else d = `M${xx},0 h${w} v30 h${-w} Z`;
-    el("path", {d, fill:colors[i]}, svg);
+    el("path", {d, fill:colors[i], class:"grow-x",
+                style:`animation-delay:${i*80}ms`}, svg);
     if (w > 120) {
       // Текст внутри цветной заливки - белый или чернильный по яркости заливки.
       // Ставим инлайн-стилем: класс .dlabel иначе перебивает атрибут fill.
@@ -551,12 +721,159 @@ function drawDots(host, rows, opts) {
     el("line", {x1:m.l, x2:cx, y1:cy, y2:cy,
                 stroke:"var(--line-strong)", "stroke-width":1}, svg);
     // кольцо цветом поверхности, чтобы точка читалась поверх поводка и сетки
-    el("circle", {cx, cy, r:6, fill:`var(${color})`,
+    el("circle", {cx, cy, r:6, fill:`var(${color})`, class:"pop",
+                  style:`animation-delay:${i*45}ms`,
                   stroke:"var(--surface-1)", "stroke-width":2}, svg);
-    const vl = el("text", {class:"dlabel", x:cx+14, y:cy+4}, svg);
+    const vl = el("text", {class:"dlabel fade-in", x:cx+14, y:cy+4}, svg);
     vl.textContent = fmt(d);
     const hit = el("rect", {class:"hit", x:0, y:m.t+rowH*i-4, width:W, height:rowH}, svg);
     bindTip(hit, label(d), tipRows(d));
+  });
+}
+
+/* ====================================================== круговые диаграммы */
+/* Кольцо, а не полный круг: в центре помещается сумма, и глаз сравнивает
+   длины дуг, а не площади секторов - на площадях люди системно ошибаются.
+   Сегменты разделены зазором в 3 px, порядок - по убыванию доли, чтобы
+   мелкие куски не тонули между крупными. Сектор с долей меньше 1,5 %
+   отдельной подписи не получает, для него есть строка в легенде. */
+function drawDonut(box, ul, opts) {
+  const S = 220, C = S/2, R = 76, TH = 24, GAPPX = 3;
+  const parts = opts.parts.filter(p => p.value > 0);
+  const total = parts.reduce((a, p) => a + p.value, 0);
+  const svg = el("svg", {viewBox:`0 0 ${S} ${S}`, class:"donut", role:"img",
+                         "aria-label":opts.aria}, box);
+  const g = el("g", {transform:`rotate(-90 ${C} ${C})`}, svg);
+  const circ = 2*Math.PI*R;
+  el("circle", {cx:C, cy:C, r:R, fill:"none", stroke:"var(--line)",
+                "stroke-width":TH}, g);
+  const ct = el("text", {class:"donut-total", x:C, y:C+2, "text-anchor":"middle"}, svg);
+  const cs = el("text", {class:"donut-sub", x:C, y:C+20, "text-anchor":"middle"}, svg);
+
+  const arcs = [], lis = [];
+  const reset = () => {
+    ct.textContent = opts.centerValue;
+    cs.textContent = opts.centerLabel;
+    svg.classList.remove("dim");
+    arcs.forEach(a => a.classList.remove("on"));
+  };
+  const focus = i => {
+    svg.classList.add("dim");
+    arcs.forEach((a, j) => a.classList.toggle("on", i === j));
+    ct.textContent = pct(parts[i].value, total);
+    cs.textContent = parts[i].short;
+  };
+
+  let acc = 0;
+  parts.forEach((p, i) => {
+    const len = Math.max(p.value/total*circ - GAPPX, 1);
+    const arc = el("circle", {cx:C, cy:C, r:R, fill:"none", stroke:p.color,
+                              "stroke-width":TH, class:"arc",
+                              "stroke-dasharray":`0 ${circ}`,
+                              "stroke-dashoffset": -acc*circ}, g);
+    arcs.push(arc);
+    // Дуга «выезжает» через dasharray: ставим конечное значение следующим
+    // кадром, дальше её тянет CSS-переход. При reduced-motion переход
+    // обнулён темой, и дуга появляется сразу.
+    setTimeout(() => { arc.style.strokeDasharray = `${len} ${circ}`; },
+               CALM ? 0 : 60 + i*110);
+    bindTip(arc, p.name, p.rows);
+    arc.addEventListener("mouseenter", () => focus(i));
+    arc.addEventListener("mouseleave", reset);
+
+    const li = document.createElement("li");
+    const sw = document.createElement("i");
+    sw.className = "swatch"; sw.style.background = p.color;
+    const nm = document.createElement("span");
+    nm.className = "nm"; nm.textContent = p.name;
+    const vl = document.createElement("span");
+    vl.className = "vl"; vl.textContent = p.short;
+    const pc = document.createElement("span");
+    pc.className = "pc"; pc.textContent = pct(p.value, total);
+    li.append(sw, nm, vl, pc);
+    li.addEventListener("mouseenter", () => focus(i));
+    li.addEventListener("mouseleave", reset);
+    ul.appendChild(li);
+    lis.push(li);
+
+    acc += p.value/total;
+  });
+  reset();
+}
+
+function donutCard(host, opts) {
+  const card = document.createElement("div");
+  card.className = "card donut-card";
+  const h = document.createElement("h3"); h.textContent = opts.title;
+  const s = document.createElement("div"); s.className = "sub"; s.textContent = opts.sub;
+  const box = document.createElement("div");
+  const ul = document.createElement("ul"); ul.className = "dlegend";
+  card.append(h, s, box, ul);
+  host.appendChild(card);
+  drawDonut(box, ul, opts);
+}
+
+function drawDonuts(host) {
+  const t = D.totals, p = t.parts;
+
+  donutCard(host, {
+    title: "Из чего сложилась стоимость",
+    sub: "четыре типа токенов по тарифам API",
+    aria: "Доли типов токенов в стоимости",
+    centerValue: money0(t.cost), centerLabel: "всего",
+    parts: [
+      {name:"Чтение кэша", value:p.cache_read,  color:"var(--series-cr)",
+       short:money0(p.cache_read),
+       rows:[["Стоимость", money(p.cache_read)], ["Токенов", compact(t.cache_read)]]},
+      {name:"Запись кэша", value:p.cache_write, color:"var(--series-cw)",
+       short:money0(p.cache_write),
+       rows:[["Стоимость", money(p.cache_write)], ["Токенов", compact(t.cache_write)]]},
+      {name:"Output",      value:p.output,      color:"var(--series-out)",
+       short:money0(p.output),
+       rows:[["Стоимость", money(p.output)], ["Токенов", compact(t.output)],
+             ["из них thinking", compact(t.thinking)]]},
+      {name:"Input",       value:p.input,       color:"var(--series-in)",
+       short:money0(p.input),
+       rows:[["Стоимость", money(p.input)], ["Токенов", compact(t.input)]]},
+    ],
+  });
+
+  const mcolors = ["var(--model-a)", "var(--model-b)"];
+  donutCard(host, {
+    title: "Модели",
+    sub: "доля в стоимости",
+    aria: "Доля моделей в стоимости",
+    centerValue: nf.format(t.calls), centerLabel: "вызовов",
+    parts: D.models.map((m, i) => ({
+      name: m.model, value: m.cost, color: mcolors[i] || "var(--series-cr)",
+      short: money0(m.cost),
+      rows: [["Стоимость", money(m.cost)], ["Вызовов", nf.format(m.calls)],
+             ["Цена вызова", money(m.cost/m.calls)], ["Output", compact(m.output)]],
+    })),
+  });
+
+  // Проекты: четыре крупнейших плюс сводный остаток - иначе кольцо
+  // превращается в частокол дуг по одному пикселю.
+  const ramp = ["var(--ramp-4)", "var(--ramp-3)", "var(--ramp-2)", "var(--ramp-1)"];
+  const top = D.projects.slice(0, 4);
+  const rest = D.projects.slice(4);
+  const restCost = rest.reduce((a, r) => a + r.cost, 0);
+  const pparts = top.map((r, i) => ({
+    name: r.name, value: r.cost, color: ramp[i], short: money0(r.cost),
+    rows: [["Стоимость", money(r.cost)], ["Сессий", nf.format(r.sessions)],
+           ["Вызовов", nf.format(r.calls)], ["Доля", pct(r.cost, t.cost)]],
+  }));
+  if (restCost > 0) pparts.push({
+    name: `Остальные (${rest.length})`, value: restCost, color: "var(--line-strong)",
+    short: money0(restCost),
+    rows: [["Стоимость", money(restCost)], ["Проектов", nf.format(rest.length)]],
+  });
+  donutCard(host, {
+    title: "Проекты",
+    sub: "четыре крупнейших и остаток",
+    aria: "Доля проектов в стоимости",
+    centerValue: nf.format(t.projects), centerLabel: "проектов",
+    parts: pparts,
   });
 }
 
@@ -578,6 +895,7 @@ function drawColumns(host, rows, opts) {
   rows.forEach((d, i) => {
     const cx = m.l + band*i + band/2, v = value(d);
     if (v > 0) el("path", {d: capPath(cx-bw/2, y(v), bw, m.t+ih-y(v), 4),
+                           class:"grow-y", style:`animation-delay:${i*20}ms`,
                            fill: typeof color === "function" ? color(d) : `var(${color})`}, svg);
     if (i % labelEvery === 0) {
       const t = el("text", {class:"axis", x:cx, y:m.t+ih+18, "text-anchor":"middle"}, svg);
@@ -633,6 +951,10 @@ function boot() {
     setTimeout(() => { rbtn.textContent = "Обновить данные"; }, 3200);
   });
 
+  const hv = $("#hero-value");
+  if (hv) countUp(hv, D.totals.cost, money);
+
+  drawDonuts($("#chart-donuts"));
   drawDaily($("#chart-daily"));
 
   drawBars($("#chart-projects"), D.projects, {
@@ -711,8 +1033,7 @@ function boot() {
 
   // Motion 2/10 по рекомендации скилла: короткое проявление секции при
   // входе в вьюпорт. При prefers-reduced-motion класс не вешается вовсе.
-  if (!matchMedia("(prefers-reduced-motion: reduce)").matches &&
-      "IntersectionObserver" in window) {
+  if (!CALM && "IntersectionObserver" in window) {
     const io = new IntersectionObserver((entries) => {
       entries.forEach(e => {
         if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }

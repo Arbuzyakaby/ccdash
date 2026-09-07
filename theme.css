@@ -7,105 +7,191 @@
    1. Шрифты подключаются локально, без @import с Google Fonts, - страница
       обязана работать офлайн; если Fira не установлена, стек падает на системный.
    2. Цвета серий на графиках взяты не отсюда, а из палитры, проверенной
-      валидатором скилла dataviz на CVD и контраст. Их менять нельзя. */
+      валидатором скилла dataviz на CVD и контраст. Их менять нельзя.
+
+   Стекло. Карточка - это не «прозрачный прямоугольник», а матовая пластина:
+   размытие + подъём насыщенности фона, поверх которого лежат непрозрачная
+   молочная подложка (--glass-bg), тонкая световая кромка сверху и едва
+   заметное зерно. Зерно и подложка нужны ради читаемости: без них текст
+   ложится прямо на цветные пятна фона и контраст плавает от места к месту.
+   Где backdrop-filter не поддерживается, подложка становится плотной. */
 
 :root {
   color-scheme: light;
-  --surface-0:#f1f5f9; --surface-1:#ffffff; --surface-2:#eef4fb;
-  --line:#dde6f2; --line-strong:#c2d1e4;
-  --ink:#0f1e3d; --ink-2:#475569; --ink-3:#71849c;
+  --surface-0:#eef2f8; --surface-1:#ffffff; --surface-2:#eef4fb;
+  --line:#dbe5f1; --line-strong:#c2d1e4;
+  --ink:#0f1e3d; --ink-2:#42536b; --ink-3:#6a7d96;
   --accent:#1e40af; --amber:#b45309;
   --series-cr:#2a78d6; --series-cw:#1baf7a; --series-out:#eb6834; --series-in:#4a3aa7;
   --model-a:#008300; --model-b:#e87ba4;
   --ramp-1:#86b6ef; --ramp-2:#3987e5; --ramp-3:#256abf; --ramp-4:#0d366b;
-  --shadow:0 1px 2px rgba(15,30,61,.06), 0 10px 28px -20px rgba(15,30,61,.28);
+  --shadow:0 1px 2px rgba(15,30,61,.05), 0 18px 40px -26px rgba(15,30,61,.34);
+  --shadow-lift:0 2px 4px rgba(15,30,61,.06), 0 30px 60px -28px rgba(15,30,61,.42);
+
+  /* стекло */
+  --glass-bg:rgba(255,255,255,.74);
+  --glass-solid:#ffffff;                 /* фолбэк без backdrop-filter */
+  --glass-edge:rgba(255,255,255,.9);     /* световая кромка сверху */
+  --glass-blur:22px; --glass-sat:165%;
+  --grain:.22;
+  --ease:cubic-bezier(.22,.9,.28,1);
   /* плотность 8/10 -> шаг 8-32px */
   --s1:8px; --s2:12px; --s3:16px; --s4:20px; --s5:24px; --s6:32px;
 }
+
+/* Тёмная тема повторяется дважды: под prefers-color-scheme и под явным
+   data-theme="dark", чтобы переключатель побеждал в обе стороны. */
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme="light"])) {
     color-scheme: dark;
-    --surface-0:#080b14; --surface-1:rgba(255,255,255,.04); --surface-2:rgba(255,255,255,.08);
-    --line:rgba(255,255,255,.08); --line-strong:rgba(255,255,255,.16);
-    --ink:#eef3fa; --ink-2:#a9b8cc; --ink-3:#7c8ca3;
+    --surface-0:#070a12; --surface-1:rgba(255,255,255,.05); --surface-2:rgba(255,255,255,.09);
+    --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.19);
+    --ink:#f2f6fc; --ink-2:#b3c1d4; --ink-3:#8595ac;
     --accent:#3b82f6; --amber:#f97316;
     --series-cr:#3987e5; --series-cw:#199e70; --series-out:#d95926; --series-in:#9085e9;
     --model-a:#008300; --model-b:#d55181;
     --ramp-1:#184f95; --ramp-2:#2a78d6; --ramp-3:#6da7ec; --ramp-4:#b7d3f6;
-    --shadow:0 1px 2px rgba(0,0,0,.45), 0 20px 44px -20px rgba(0,0,0,.7);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 24px 48px -26px rgba(0,0,0,.75);
+    --shadow-lift:0 2px 6px rgba(0,0,0,.5), 0 36px 70px -26px rgba(0,0,0,.85);
+    --glass-bg:rgba(20,28,44,.55);
+    --glass-solid:#111827;
+    --glass-edge:rgba(255,255,255,.14);
+    --glass-blur:26px; --glass-sat:145%;
+    --grain:.30;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --surface-0:#080b14; --surface-1:rgba(255,255,255,.04); --surface-2:rgba(255,255,255,.08);
-  --line:rgba(255,255,255,.08); --line-strong:rgba(255,255,255,.16);
-  --ink:#eef3fa; --ink-2:#a9b8cc; --ink-3:#7c8ca3;
+  --surface-0:#070a12; --surface-1:rgba(255,255,255,.05); --surface-2:rgba(255,255,255,.09);
+  --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.19);
+  --ink:#f2f6fc; --ink-2:#b3c1d4; --ink-3:#8595ac;
   --accent:#3b82f6; --amber:#f97316;
   --series-cr:#3987e5; --series-cw:#199e70; --series-out:#d95926; --series-in:#9085e9;
   --model-a:#008300; --model-b:#d55181;
   --ramp-1:#184f95; --ramp-2:#2a78d6; --ramp-3:#6da7ec; --ramp-4:#b7d3f6;
-  --shadow:0 1px 2px rgba(0,0,0,.45), 0 20px 44px -20px rgba(0,0,0,.7);
-}
-:root[data-theme="dark"] body, :root:where(:not([data-theme="light"])) body {
-  background:
-    radial-gradient(700px 500px at -5% -10%, rgba(59,130,246,.20), transparent 60%),
-    radial-gradient(700px 500px at 105% 105%, rgba(249,115,22,.16), transparent 60%),
-    var(--surface-0);
-  background-attachment: fixed;
-}
-:root[data-theme="dark"] .card, :root:where(:not([data-theme="light"])) .card,
-:root[data-theme="dark"] .tile, :root:where(:not([data-theme="light"])) .tile {
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 24px 48px -26px rgba(0,0,0,.75);
+  --shadow-lift:0 2px 6px rgba(0,0,0,.5), 0 36px 70px -26px rgba(0,0,0,.85);
+  --glass-bg:rgba(20,28,44,.55);
+  --glass-solid:#111827;
+  --glass-edge:rgba(255,255,255,.14);
+  --glass-blur:26px; --glass-sat:145%;
+  --grain:.30;
 }
 
 * { box-sizing: border-box; }
 body {
-  margin:0; background:var(--surface-0); color:var(--ink);
+  margin:0; color:var(--ink);
   font-family:"Fira Sans","Segoe UI Variable Text","Segoe UI",system-ui,
               -apple-system,"Helvetica Neue",Arial,sans-serif;
   font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  background:var(--surface-0);
 }
+/* Фон под стеклом. Светлая тема тоже получает пятна: размывать плоскую
+   заливку бессмысленно, стекло на ней выглядит грязным серым слоем. */
+body::before {
+  content:""; position:fixed; inset:-10%; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(46% 40% at 8% 4%, rgba(30,64,175,.16), transparent 62%),
+    radial-gradient(44% 42% at 96% 8%, rgba(180,83,9,.12), transparent 62%),
+    radial-gradient(52% 46% at 84% 96%, rgba(37,106,191,.14), transparent 62%);
+  animation:drift 34s ease-in-out infinite alternate;
+}
+:root[data-theme="dark"] body::before,
+:root:where(:not([data-theme="light"])) body::before {
+  background:
+    radial-gradient(46% 40% at 6% 2%, rgba(59,130,246,.30), transparent 62%),
+    radial-gradient(44% 42% at 98% 10%, rgba(249,115,22,.20), transparent 62%),
+    radial-gradient(54% 48% at 86% 98%, rgba(74,58,167,.26), transparent 62%);
+}
+@keyframes drift {
+  from { transform:translate3d(0,0,0) scale(1); }
+  to   { transform:translate3d(-2.5%,1.5%,0) scale(1.06); }
+}
+
 .wrap { max-width:1180px; margin:0 auto; padding:var(--s6) var(--s5) 56px; }
+
+/* ---------- стеклянная пластина ---------- */
+.card, .tiles, .glass {
+  position:relative; isolation:isolate;
+  background:var(--glass-solid);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow), inset 0 1px 0 var(--glass-edge);
+}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  .card, .tiles, .glass {
+    background:var(--glass-bg);
+    backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
+}
+/* Зерно: оно и делает стекло матовым, а не глянцевым. Лежит поверх подложки,
+   но под содержимым, и не ловит мышь. */
+.card::after, .tiles::after, .glass::after {
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  z-index:-1; opacity:var(--grain); mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='120' height='120' filter='url(%23n)' opacity='.5'/></svg>");
+}
 
 /* ---------- шапка ---------- */
 .top { display:flex; align-items:flex-start; gap:var(--s5); flex-wrap:wrap;
-       padding-bottom:var(--s4); border-bottom:2px solid var(--accent);
-       margin-bottom:var(--s6); }
+       padding-bottom:var(--s4); margin-bottom:var(--s6);
+       border-bottom:1px solid var(--line); position:relative; }
+.top::after { content:""; position:absolute; left:0; bottom:-1px; height:2px; width:100%;
+              background:linear-gradient(90deg, var(--accent), var(--amber) 55%, transparent);
+              border-radius:2px; transform-origin:left;
+              animation:sweep .9s var(--ease) both; }
+@keyframes sweep { from { transform:scaleX(0); opacity:0; } to { transform:scaleX(1); opacity:1; } }
 .top h1 { margin:0 0 4px; font-size:20px; font-weight:600; letter-spacing:-.015em; }
 .top .sub { color:var(--ink-2); font-size:12.5px; }
 .top .spacer { flex:1 1 auto; }
 .toolbar { display:flex; gap:var(--s1); align-items:center; }
 button.ghost {
-  font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--surface-1);
+  font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--glass-bg);
   border:1px solid var(--line-strong); border-radius:999px; padding:7px 16px;
-  min-height:32px; cursor:pointer;
-  transition:background .18s ease, color .18s ease, border-color .18s ease;
+  min-height:32px; cursor:pointer; position:relative; overflow:hidden;
+  backdrop-filter:blur(10px) saturate(140%); -webkit-backdrop-filter:blur(10px) saturate(140%);
+  transition:background .2s var(--ease), color .2s var(--ease),
+             border-color .2s var(--ease), transform .2s var(--ease),
+             box-shadow .2s var(--ease);
 }
 button.ghost:hover { background:var(--surface-2); color:var(--accent);
-                     border-color:var(--accent); }
+                     border-color:var(--accent); transform:translateY(-1px);
+                     box-shadow:0 8px 20px -12px rgba(30,64,175,.7); }
+button.ghost:active { transform:translateY(0); }
 button.ghost:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
 /* ---------- герой и плитки ---------- */
 .hero-row { display:grid; grid-template-columns:minmax(250px,1fr) 2fr;
             gap:var(--s2); margin-bottom:var(--s6); align-items:stretch; }
-.card { background:var(--surface-1); border:1px solid var(--line);
-        border-radius:18px; box-shadow:var(--shadow); }
+.card { border-radius:18px; }
+.card, .tiles { transition:transform .28s var(--ease), box-shadow .28s var(--ease); }
+.card:hover, .tiles:hover { box-shadow:var(--shadow-lift), inset 0 1px 0 var(--glass-edge); }
+.panel:hover, .hero:hover, .donut-card:hover { transform:translateY(-2px); }
+
 .hero { padding:var(--s4) var(--s5); display:flex; flex-direction:column;
-        justify-content:center; border-left:3px solid var(--amber); border-radius:18px; }
+        justify-content:center; border-radius:18px; overflow:hidden; }
+.hero::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+                background:linear-gradient(180deg, var(--amber), var(--accent));
+                z-index:1; }
 .hero .label { font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
                color:var(--ink-3); font-weight:600; }
 .hero .value { font-size:50px; font-weight:600; letter-spacing:-.03em;
-               line-height:1.04; margin:var(--s1) 0; }
+               line-height:1.04; margin:var(--s1) 0;
+               font-variant-numeric:tabular-nums;
+               background:linear-gradient(120deg, var(--ink) 30%, var(--accent));
+               -webkit-background-clip:text; background-clip:text; color:transparent; }
 .hero .note { font-size:12px; color:var(--ink-2); max-width:34ch; }
+
 .tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
-         background:var(--line); border-radius:18px; overflow:hidden;
-         border:1px solid var(--line); box-shadow:var(--shadow); }
-.tile { background:var(--surface-1); padding:var(--s2) var(--s3);
-        transition:background .18s ease; }
+         border-radius:18px; overflow:hidden; }
+.tile { padding:var(--s2) var(--s3); position:relative;
+        box-shadow:0 0 0 1px var(--line);
+        transition:background .2s var(--ease); }
 .tile:hover { background:var(--surface-2); }
 .tile .label { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
                color:var(--ink-3); font-weight:600; }
-.tile .value { font-size:24px; font-weight:600; letter-spacing:-.02em; margin-top:3px; }
+.tile .value { font-size:24px; font-weight:600; letter-spacing:-.02em; margin-top:3px;
+               font-variant-numeric:tabular-nums; }
 .tile .hint { font-size:11.5px; color:var(--ink-2); margin-top:1px; }
 
 /* ---------- секции ---------- */
@@ -114,7 +200,8 @@ section { margin-bottom:var(--s6); }
         flex-wrap:wrap; }
 .head h2 { margin:0; font-size:15px; font-weight:600; letter-spacing:-.01em; }
 .head h2::before { content:""; display:inline-block; width:3px; height:13px;
-                   background:var(--accent); border-radius:2px;
+                   background:linear-gradient(180deg, var(--accent), var(--amber));
+                   border-radius:2px;
                    margin-right:var(--s1); transform:translateY(1px); }
 .head .spacer { flex:1 1 auto; }
 .cap { color:var(--ink-2); font-size:12.5px; margin:0 0 var(--s2); max-width:78ch; }
@@ -132,6 +219,33 @@ svg text { font-family:inherit; }
 .axis-strong { font-size:11.5px; fill:var(--ink-2); }
 .grid { stroke:var(--line); stroke-width:1; }
 .dlabel { font-size:11.5px; fill:var(--ink-2); font-weight:550; }
+
+/* ---------- круговые диаграммы ---------- */
+.donuts { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s2); }
+.donut-card { border-radius:18px; padding:var(--s3) var(--s3) var(--s2);
+              display:flex; flex-direction:column; }
+.donut-card h3 { margin:0 0 2px; font-size:12.5px; font-weight:600; }
+.donut-card .sub { font-size:11.5px; color:var(--ink-3); margin-bottom:var(--s1); }
+svg.donut { width:100%; max-width:210px; margin:2px auto var(--s1); }
+.donut .arc { transition:stroke-dasharray .9s var(--ease), opacity .2s ease,
+                         stroke-width .2s ease; cursor:default; }
+.donut.dim .arc { opacity:.28; }
+.donut.dim .arc.on { opacity:1; stroke-width:30; }
+.donut-total { font-size:19px; font-weight:600; fill:var(--ink);
+               font-variant-numeric:tabular-nums; }
+.donut-sub { font-size:10.5px; fill:var(--ink-3); }
+.dlegend { list-style:none; margin:auto 0 0; padding:0; }
+.dlegend li { display:flex; align-items:center; gap:8px; padding:4px 0;
+              border-top:1px solid var(--line); font-size:12px; color:var(--ink-2);
+              transition:color .18s ease; }
+.dlegend li:hover { color:var(--ink); }
+.dlegend .nm { flex:1 1 auto; overflow:hidden; text-overflow:ellipsis;
+               white-space:nowrap; }
+.dlegend .vl { font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
+               font-size:11px; color:var(--ink); font-variant-numeric:tabular-nums; }
+.dlegend .pc { width:52px; text-align:right; color:var(--ink-3);
+               font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
+               font-size:11px; }
 
 /* ---------- таблицы ---------- */
 .tablewrap { overflow-x:auto; margin-top:2px; }
@@ -168,30 +282,61 @@ code { font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
 
 /* ---------- тултип ---------- */
 #tip { position:fixed; pointer-events:none; z-index:50; opacity:0;
-       transition:opacity .15s ease; background:var(--surface-1); color:var(--ink);
-       border:1px solid var(--line-strong); border-radius:8px;
-       padding:var(--s1) var(--s2);
-       box-shadow:0 8px 28px -10px rgba(0,0,0,.4); font-size:12.5px; max-width:280px; }
+       transition:opacity .15s ease; color:var(--ink);
+       border:1px solid var(--line-strong); border-radius:10px;
+       padding:var(--s1) var(--s2); background:var(--glass-solid);
+       box-shadow:0 12px 36px -12px rgba(0,0,0,.5); font-size:12.5px; max-width:280px; }
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  #tip { background:var(--glass-bg);
+         backdrop-filter:blur(18px) saturate(160%);
+         -webkit-backdrop-filter:blur(18px) saturate(160%); }
+}
 #tip .t { font-weight:600; margin-bottom:5px; }
 #tip .r { display:flex; justify-content:space-between; gap:var(--s4); color:var(--ink-2); }
 #tip .r b { color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums;
             font-family:"Fira Code","Cascadia Mono",Consolas,monospace; }
 .hit { fill:transparent; }
 
-/* ---------- проявление секций (motion 2/10, минимальное) ---------- */
-.reveal { opacity:0; transform:translateY(10px);
-          transition:opacity .35s ease-out, transform .35s ease-out; }
-.reveal.in { opacity:1; transform:none; }
+/* ---------- анимации появления ----------
+   Motion остаётся сдержанным: секция всплывает один раз при входе в вьюпорт,
+   марки графиков вырастают из своей базовой линии. Ничего не двигается
+   повторно и ничего не мигает - под prefers-reduced-motion всё выключено. */
+.reveal { opacity:0; transform:translateY(14px); }
+.reveal.in { opacity:1; transform:none;
+             transition:opacity .5s var(--ease), transform .5s var(--ease); }
+.hero, .tiles { animation:rise .6s var(--ease) both; }
+.tiles { animation-delay:.08s; }
+@keyframes rise { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+
+/* Столбики и полосы: масштаб от своей базы. transform-box:fill-box переводит
+   transform-origin в систему координат самой марки. */
+.grow-y, .grow-x { transform-box:fill-box; }
+.grow-y { transform-origin:bottom; }
+.grow-x { transform-origin:left; }
+.in .grow-y { animation:growY .7s var(--ease) both; }
+.in .grow-x { animation:growX .7s var(--ease) both; }
+@keyframes growY { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+@keyframes growX { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+.fade-in { opacity:0; }
+.in .fade-in { animation:fadeIn .5s ease-out .35s both; }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+.pop { transform-box:fill-box; transform-origin:center; }
+.in .pop { animation:pop .5s var(--ease) both; }
+@keyframes pop { from { opacity:0; transform:scale(.4); } to { opacity:1; transform:scale(1); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration:.01ms !important; transition-duration:.01ms !important;
+    animation-duration:.01ms !important; animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
   }
   .reveal { opacity:1; transform:none; }
+  body::before { animation:none; }
 }
 
 /* ---------- контрольные точки 1440 / 1024 / 768 / 375 ---------- */
 @media (max-width:1024px) { .wrap { max-width:100%; } }
+@media (max-width:960px) { .donuts { grid-template-columns:1fr; }
+                           svg.donut { max-width:240px; } }
 @media (max-width:860px) {
   .hero-row { grid-template-columns:1fr; }
   .tiles { grid-template-columns:repeat(2,1fr); }
