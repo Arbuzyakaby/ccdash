@@ -15,7 +15,11 @@ attachment) не читаются вообще. Скрипт не делает �
 вывода показывает, не разъехался ли формат.
 
 Зависимости: только стандартная библиотека.
-Запуск: python collect.py [--db PATH] [--projects DIR] [--no-crosscheck]
+Запуск: python collect.py [--verbose] [--db PATH] [--projects DIR] [--no-crosscheck]
+
+По умолчанию печатается короткая сводка: сколько прочитано, итоговая сумма,
+сверка с ccusage и предупреждения (только если они есть). Подробный постатейный
+разбор (по дням/проектам/моделям/сессиям) — под флагом --verbose.
 """
 
 from __future__ import annotations
@@ -46,13 +50,14 @@ def parse_args() -> argparse.Namespace:
                    help="каталог с транскриптами сессий")
     p.add_argument("--db", type=Path, default=here / "usage.db",
                    help="файл SQLite для агрегатов")
-    p.add_argument("--pricing", type=Path, default=here / "pricing.json")
     p.add_argument("--html", type=Path, default=here / "index.html",
                    help="куда положить дашборд")
     p.add_argument("--no-crosscheck", action="store_true",
                    help="не сверяться с ccusage")
     p.add_argument("--no-html", action="store_true",
                    help="только пересобрать базу, дашборд не трогать")
+    p.add_argument("--verbose", action="store_true",
+                   help="подробный постатейный отчёт вместо короткой сводки")
     return p.parse_args()
 
 
@@ -492,6 +497,52 @@ def crosscheck(conn: sqlite3.Connection) -> None:
 
 # ---------------------------------------------------------------- вывод
 
+def report_short(conn: sqlite3.Connection, stats: Stats) -> None:
+    """Сводка в несколько строк: что нужно увидеть на обычном прогоне.
+    Постатейный разбор по дням/проектам/моделям/сессиям — под --verbose."""
+    q = conn.execute
+    total = q("SELECT COUNT(*), COUNT(DISTINCT project_path), COUNT(DISTINCT session_id),"
+              " MIN(date_local), MAX(date_local), SUM(cost_1h) FROM calls").fetchone()
+    calls, projects, sessions, d0, d1, cost = total
+    top = q("SELECT project_name, cost_1h FROM v_project"
+            " ORDER BY cost_1h DESC LIMIT 1").fetchone()
+
+    print("\n--- СВОДКА ---")
+    print(f"  прочитано  : {stats.files} файлов, {stats.lines:,} строк, "
+          f"{stats.kept:,} уникальных вызовов "
+          f"({stats.duplicates:,} дублей отброшено, "
+          f"{stats.duplicates / max(stats.usage_rows, 1) * 100:.1f}%)")
+    print(f"  период     : {d0} … {d1}   {projects} проектов   {sessions} сессий   "
+          f"{calls:,} вызовов")
+    print(f"  стоимость  : ${cost:,.2f}"
+          + (f"   больше всего — {top[0]} (${top[1]:,.2f})" if top else ""))
+
+    problems = [
+        ("битых JSON-строк", stats.bad_json),
+        ("записей без timestamp", stats.no_timestamp),
+        ("записей без модели", stats.no_model),
+        ("записей без cwd", stats.no_cwd),
+        ("записей без ключа дедупа", stats.no_dedup_key),
+        ("ошибок чтения файлов", len(stats.read_errors)),
+    ]
+    bad = [(label, count) for label, count in problems if count]
+    if stats.unknown_models:
+        bad.append(("моделей без цены в pricing.json", len(stats.unknown_models)))
+    if stats.unknown_usage_keys:
+        bad.append(("новых полей в message.usage", len(stats.unknown_usage_keys)))
+    if bad:
+        print("  !! формату не доверять, см. ниже:")
+        for label, count in bad:
+            print(f"     !! {label}: {count}")
+        if stats.unknown_models:
+            print(f"        модели без цены: {dict(stats.unknown_models)}")
+        if stats.unknown_usage_keys:
+            print(f"        новые поля usage: {dict(stats.unknown_usage_keys)}")
+    else:
+        print("  OK формат в порядке (санитарные проверки чистые)")
+    print("  Подробный разбор по дням/проектам/моделям/сессиям: --verbose")
+
+
 def report(conn: sqlite3.Connection, stats: Stats) -> None:
     q = conn.execute
     print("\n--- ЧТО ПРОЧИТАНО ---")
@@ -593,10 +644,11 @@ def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     args = parse_args()
+    pricing_path = Path(__file__).resolve().parent / "pricing.json"
     try:
-        pricing = json.loads(args.pricing.read_text(encoding="utf-8"))
+        pricing = json.loads(pricing_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        print(f"Не удалось прочитать {args.pricing}: {exc}", file=sys.stderr)
+        print(f"Не удалось прочитать {pricing_path}: {exc}", file=sys.stderr)
         return 1
 
     stats = Stats()
@@ -608,7 +660,7 @@ def main() -> int:
         return 1
     price_rows(rows, pricing, stats)
     conn = write_db(args.db, rows, stats, args)
-    report(conn, stats)
+    (report if args.verbose else report_short)(conn, stats)
     if not args.no_crosscheck:
         crosscheck(conn)
     conn.close()
