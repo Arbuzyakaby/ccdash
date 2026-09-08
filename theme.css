@@ -25,6 +25,9 @@
   --series-cr:#2a78d6; --series-cw:#1baf7a; --series-out:#eb6834; --series-in:#4a3aa7;
   --model-a:#008300; --model-b:#e87ba4;
   --ramp-1:#86b6ef; --ramp-2:#3987e5; --ramp-3:#256abf; --ramp-4:#0d366b;
+  /* Тренд-индикаторы (бейджи ▲/▼). Не серии данных - смена не требует
+     повторной проверки dataviz, но контраст в обоих режимах всё равно сверен. */
+  --good:#15803d; --bad:#b91c1c;
   --shadow:0 1px 2px rgba(15,30,61,.05), 0 18px 40px -26px rgba(15,30,61,.34);
   --shadow-lift:0 2px 4px rgba(15,30,61,.06), 0 30px 60px -28px rgba(15,30,61,.42);
 
@@ -51,6 +54,7 @@
     --series-cr:#3987e5; --series-cw:#199e70; --series-out:#d95926; --series-in:#9085e9;
     --model-a:#008300; --model-b:#d55181;
     --ramp-1:#184f95; --ramp-2:#2a78d6; --ramp-3:#6da7ec; --ramp-4:#b7d3f6;
+    --good:#4ade80; --bad:#f87171;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 24px 48px -26px rgba(0,0,0,.75);
     --shadow-lift:0 2px 6px rgba(0,0,0,.5), 0 36px 70px -26px rgba(0,0,0,.85);
     --glass-bg:rgba(20,28,44,.55);
@@ -69,6 +73,7 @@
   --series-cr:#3987e5; --series-cw:#199e70; --series-out:#d95926; --series-in:#9085e9;
   --model-a:#008300; --model-b:#d55181;
   --ramp-1:#184f95; --ramp-2:#2a78d6; --ramp-3:#6da7ec; --ramp-4:#b7d3f6;
+  --good:#4ade80; --bad:#f87171;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 24px 48px -26px rgba(0,0,0,.75);
   --shadow-lift:0 2px 6px rgba(0,0,0,.5), 0 36px 70px -26px rgba(0,0,0,.85);
   --glass-bg:rgba(20,28,44,.55);
@@ -145,6 +150,23 @@ body::before {
 .top .sub { color:var(--ink-2); font-size:12.5px; }
 .top .spacer { flex:1 1 auto; }
 .toolbar { display:flex; gap:var(--s1); align-items:center; }
+/* Чип с итоговой стоимостью в шапке - как ценник на референсе. */
+.stat-chip {
+  font-family:"Fira Code","Cascadia Mono",Consolas,monospace;
+  font-size:12.5px; font-weight:600; color:var(--ink);
+  padding:7px 16px; min-height:32px; display:inline-flex; align-items:center;
+  border-radius:999px; border:1px solid var(--line-strong);
+  background:linear-gradient(120deg, color-mix(in srgb, var(--accent) 16%, transparent),
+                                     color-mix(in srgb, var(--amber) 16%, transparent));
+  align-self:center; white-space:nowrap;
+}
+/* Сегментированная группа: кнопки срастаются в одну пилюлю. */
+.toolbar.seg { gap:0; }
+.toolbar.seg button.ghost {
+  border-radius:0; border-right-width:0;
+}
+.toolbar.seg button.ghost:first-child { border-top-left-radius:999px; border-bottom-left-radius:999px; }
+.toolbar.seg button.ghost:last-child { border-top-right-radius:999px; border-bottom-right-radius:999px; border-right-width:1px; }
 button.ghost {
   font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--glass-bg);
   border:1px solid var(--line-strong); border-radius:999px; padding:7px 16px;
@@ -163,13 +185,13 @@ button.ghost:focus-visible { outline:2px solid var(--accent); outline-offset:2px
 /* ---------- герой и плитки ---------- */
 .hero-row { display:grid; grid-template-columns:minmax(250px,1fr) 2fr;
             gap:var(--s2); margin-bottom:var(--s6); align-items:stretch; }
-.card { border-radius:18px; }
+.card { border-radius:20px; }
 .card, .tiles { transition:transform .28s var(--ease), box-shadow .28s var(--ease); }
 .card:hover, .tiles:hover { box-shadow:var(--shadow-lift), inset 0 1px 0 var(--glass-edge); }
 .panel:hover, .hero:hover, .donut-card:hover { transform:translateY(-2px); }
 
 .hero { padding:var(--s4) var(--s5); display:flex; flex-direction:column;
-        justify-content:center; border-radius:18px; overflow:hidden; }
+        justify-content:center; border-radius:20px; overflow:hidden; }
 .hero::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
                 background:linear-gradient(180deg, var(--amber), var(--accent));
                 z-index:1; }
@@ -182,15 +204,28 @@ button.ghost:focus-visible { outline:2px solid var(--accent); outline-offset:2px
                -webkit-background-clip:text; background-clip:text; color:transparent; }
 .hero .note { font-size:12px; color:var(--ink-2); max-width:34ch; }
 
+/* Бейдж тренда ▲/▼: не серия данных, а направление изменения. */
+.delta { display:inline-flex; align-items:center; gap:3px; font-size:11px;
+         font-weight:600; padding:2px 7px; border-radius:999px;
+         font-variant-numeric:tabular-nums; line-height:1.5; }
+.delta.up { color:var(--good); background:color-mix(in srgb, var(--good) 16%, transparent); }
+.delta.down { color:var(--bad); background:color-mix(in srgb, var(--bad) 16%, transparent); }
+.hero-delta { display:flex; align-items:center; gap:var(--s1); margin:2px 0 var(--s1); }
+.hero-delta-label { font-size:11.5px; color:var(--ink-3); }
+
 .tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
-         border-radius:18px; overflow:hidden; }
+         border-radius:20px; overflow:hidden; }
 .tile { padding:var(--s2) var(--s3); position:relative;
         box-shadow:0 0 0 1px var(--line);
         transition:background .2s var(--ease); }
 .tile:hover { background:var(--surface-2); }
+.tile-icon { width:15px; height:15px; margin-bottom:6px; color:var(--ink-3);
+             stroke:currentColor; stroke-width:1.4; fill:none;
+             stroke-linecap:round; stroke-linejoin:round; }
 .tile .label { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
                color:var(--ink-3); font-weight:600; }
-.tile .value { font-size:24px; font-weight:600; letter-spacing:-.02em; margin-top:3px;
+.tile .value-row { display:flex; align-items:baseline; gap:7px; margin-top:3px; }
+.tile .value { font-size:24px; font-weight:600; letter-spacing:-.02em;
                font-variant-numeric:tabular-nums; }
 .tile .hint { font-size:11.5px; color:var(--ink-2); margin-top:1px; }
 
@@ -222,7 +257,7 @@ svg text { font-family:inherit; }
 
 /* ---------- круговые диаграммы ---------- */
 .donuts { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s2); }
-.donut-card { border-radius:18px; padding:var(--s3) var(--s3) var(--s2);
+.donut-card { border-radius:20px; padding:var(--s3) var(--s3) var(--s2);
               display:flex; flex-direction:column; }
 .donut-card h3 { margin:0 0 2px; font-size:12.5px; font-weight:600; }
 .donut-card .sub { font-size:11.5px; color:var(--ink-3); margin-bottom:var(--s1); }

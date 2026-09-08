@@ -726,6 +726,37 @@ def pct(a: float, b: float) -> str:
     return f"{a / b * 100:.1f}".replace(".", ",") + " %" if b else "—"
 
 
+def delta_badge(cur: float, prev: float, title: str) -> str:
+    """Бейдж ▲/▼: изменение за последние 7 дней к предыдущим 7.
+    Пусто, если данных за предыдущий период ещё нет (свежий дашборд)."""
+    if prev <= 0:
+        return ""
+    change = (cur - prev) / prev * 100
+    arrow, cls = ("▲", "up") if change >= 0 else ("▼", "down")
+    val = f"{abs(change):.1f}".replace(".", ",")
+    return (f'<span class="delta {cls}" title="{esc(title)}">'
+            f'{arrow} {val}&nbsp;%</span>')
+
+
+# Иконки плиток: минимальные 16x16 SVG-фрагменты без внешних зависимостей.
+TILE_ICONS = {
+    "tokens": '<circle cx="5.6" cy="6.4" r="3.6"/><circle cx="10.4" cy="9.6" r="3.6"/>',
+    "calls": ('<path d="M8.6 1.6 3.2 9h3.6l-1 5.4L12.8 7H9.2z" '
+              'fill="currentColor" stroke="none"/>'),
+    "sessions": '<path d="M2 3.2h12v7.6H6.4L3 13.6V10.8H2z"/>',
+    "days": ('<rect x="2" y="3" width="12" height="11" rx="1.6"/>'
+             '<path d="M2 6.4h12M5.2 1.6v3M10.8 1.6v3"/>'),
+    "cache": ('<path d="M13.4 8a5.4 5.4 0 1 1-1.6-3.8"/>'
+              '<path d="M13.4 2.6v3.6h-3.6"/>'),
+    "thinking": ('<path d="M8 1.4 9.3 5l3.6.3-2.7 2.4.8 3.5L8 9.3l-3 1.9.8-3.5-2.7-2.4L6.7 5z" '
+                 'fill="currentColor" stroke="none"/>'),
+}
+
+
+def tile_icon(key: str) -> str:
+    return f'<svg class="tile-icon" viewBox="0 0 16 16" aria-hidden="true">{TILE_ICONS[key]}</svg>'
+
+
 def table(headers: list, rows: list, foot: list | None = None) -> str:
     head = "".join(f"<th>{esc(h)}</th>" for h in headers)
     body = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows)
@@ -767,25 +798,43 @@ def build_html(d: dict) -> str:
     cache_hit = t["cache_read"] / (t["cache_read"] + t["cache_write"] + t["input"]) * 100
     top_project = d["projects"][0]
 
+    # --- тренд за 7 дней: последние 7 суток с данными против предыдущих 7
+    last7, prev7 = d["days"][-7:], d["days"][-14:-7]
+
+    def sum7(rows: list, key: str) -> float:
+        return sum(r[key] for r in rows)
+
+    def tokens7(rows: list) -> float:
+        return sum(r["input"] + r["output"] + r["cache_read"] + r["cache_write"]
+                   for r in rows)
+
+    cost_delta = delta_badge(sum7(last7, "cost"), sum7(prev7, "cost"),
+                              "Расход за последние 7 дней к предыдущим 7")
+    calls_delta = delta_badge(sum7(last7, "calls"), sum7(prev7, "calls"),
+                               "Вызовы за последние 7 дней к предыдущим 7")
+    tokens_delta = delta_badge(tokens7(last7), tokens7(prev7),
+                                "Токены за последние 7 дней к предыдущим 7")
+
     # --- плитки
     tiles = [
-        ("Токенов всего", compact_ru(tokens_total),
-         f"{pct(t['cache_read'], tokens_total)} — чтение кэша"),
-        ("Вызовов к API", fmt_int(t["calls"]),
-         f"в среднем {fmt_money(t['cost'] / t['calls'])} за вызов"),
-        ("Сессий", fmt_int(t["sessions"]), f"в {t['projects']} проектах"),
-        ("Дней с активностью", fmt_int(t["days"]),
-         f"{t['first']} … {t['last']}"),
-        ("Попаданий в кэш", pct(t["cache_read"],
+        ("tokens", "Токенов всего", compact_ru(tokens_total),
+         f"{pct(t['cache_read'], tokens_total)} — чтение кэша", tokens_delta),
+        ("calls", "Вызовов к API", fmt_int(t["calls"]),
+         f"в среднем {fmt_money(t['cost'] / t['calls'])} за вызов", calls_delta),
+        ("sessions", "Сессий", fmt_int(t["sessions"]), f"в {t['projects']} проектах", ""),
+        ("days", "Дней с активностью", fmt_int(t["days"]),
+         f"{t['first']} … {t['last']}", ""),
+        ("cache", "Попаданий в кэш", pct(t["cache_read"],
                                 t["cache_read"] + t["cache_write"] + t["input"]),
-         "доля чтения во входящих"),
-        ("Thinking", compact_ru(t["thinking"]),
-         f"{pct(t['thinking'], t['output'])} от всего output"),
+         "доля чтения во входящих", ""),
+        ("thinking", "Thinking", compact_ru(t["thinking"]),
+         f"{pct(t['thinking'], t['output'])} от всего output", ""),
     ]
     tiles_html = "".join(
-        f'<div class="tile"><div class="label">{esc(a)}</div>'
-        f'<div class="value">{esc(b)}</div><div class="hint">{esc(c)}</div></div>'
-        for a, b, c in tiles)
+        f'<div class="tile">{tile_icon(icon)}<div class="label">{esc(a)}</div>'
+        f'<div class="value-row"><div class="value">{esc(b)}</div>{delta}</div>'
+        f'<div class="hint">{esc(c)}</div></div>'
+        for icon, a, b, c, delta in tiles)
 
     # --- дни
     days_rows = [[
@@ -1045,7 +1094,8 @@ def build_html(d: dict) -> str:
       Собрано {esc(meta['built_at'][:16].replace('T', ' '))}</div>
   </div>
   <div class="spacer"></div>
-  <div class="toolbar">
+  <div class="stat-chip" title="Итоговая стоимость по тарифам API">{fmt_money(t['cost'])}</div>
+  <div class="toolbar seg">
     <button class="ghost" id="refresh">Обновить данные</button>
     <button class="ghost" id="theme">Тема</button>
   </div>
@@ -1055,6 +1105,7 @@ def build_html(d: dict) -> str:
   <div class="card hero">
     <div class="label">Стоимость по тарифам API</div>
     <div class="value" id="hero-value">{fmt_money(t['cost'])}</div>
+    {f'<div class="hero-delta">{cost_delta}<span class="hero-delta-label">за последние 7 дней</span></div>' if cost_delta else ''}
     <div class="note">Это оценка «во сколько обошлось бы то же самое по тарифам
       Anthropic API». У вас подписка Claude Pro — реальный платёж фиксированный
       и от этой цифры не зависит.</div>
